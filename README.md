@@ -221,11 +221,11 @@ The test suite covers the core risk, triage, database, and recommendation logic.
 
 To test buying and selling, run the following code before executing the test suite
 
-'''bash
+```bash
 export ALPACA_RUN_ORDER_INTEGRATION=1
 export ALPACA_TEST_TICKER=SIRI
 export ALPACA_TEST_NOTIONAL=10
-'''
+```
 
 ## Troubleshooting
 
