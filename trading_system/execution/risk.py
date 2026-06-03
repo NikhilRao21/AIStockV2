@@ -10,6 +10,8 @@ def check_confidence(rec: dict) -> tuple[bool, str]:
 
 def check_position_size(rec: dict, portfolio_value: float) -> tuple[bool, str]:
     size_pct = rec.get("position_size_pct", 0)
+    if size_pct > 1.0:
+        size_pct = size_pct / 100.0
     if size_pct > config.MAX_POSITION_PCT:
         return False, f"Position size {size_pct} exceeds max {config.MAX_POSITION_PCT}"
     return True, ""
@@ -17,7 +19,16 @@ def check_position_size(rec: dict, portfolio_value: float) -> tuple[bool, str]:
 def check_cash_reserve(notional: float, cash: float, portfolio_value: float) -> tuple[bool, str]:
     if portfolio_value == 0:
         return False, "Portfolio value is 0"
-    if (cash - notional) / portfolio_value < config.MIN_CASH_RESERVE_PCT:
+    remaining_cash_pct = (cash - notional) / portfolio_value
+    logger.info(
+        "Cash reserve check: cash=%s notional=%s portfolio_value=%s remaining_cash_pct=%s min_cash_reserve_pct=%s",
+        cash,
+        notional,
+        portfolio_value,
+        remaining_cash_pct,
+        config.MIN_CASH_RESERVE_PCT,
+    )
+    if remaining_cash_pct < config.MIN_CASH_RESERVE_PCT:
         return False, "Insufficient cash reserve"
     return True, ""
 
@@ -65,7 +76,21 @@ def run_all_checks(rec: dict, account, positions: list, clock, peak_value: float
     ticker = rec.get("ticker")
     portfolio_value = float(account.portfolio_value)
     cash = float(account.cash)
-    notional = portfolio_value * rec.get("position_size_pct", 0)
+    position_size_pct = rec.get("position_size_pct", 0)
+    notional = portfolio_value * position_size_pct
+
+    logger.info(
+        "Risk inputs for %s: portfolio_value=%s cash=%s position_size_pct=%s notional=%s open_positions=%s sweep_entries=%s peak_value=%s day_start_value=%s",
+        ticker,
+        portfolio_value,
+        cash,
+        position_size_pct,
+        notional,
+        len(positions),
+        sweep_entries,
+        peak_value,
+        day_start_value,
+    )
     
     checks = [
         check_confidence(rec),
