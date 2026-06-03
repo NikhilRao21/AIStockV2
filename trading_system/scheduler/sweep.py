@@ -46,7 +46,7 @@ def run_sweep(sweep_name: str):
         account = trading_client.get_account()
         logger.info("Fetching Alpaca positions")
         positions = trading_client.get_all_positions()
-        positionsString = ";".join(["{} shares of {}".format(p.qty, p.symbol) for p in positions])
+        positionString = ";".join(["{} shares of {}".format(p.qty, p.symbol) for p in positions])
         logger.info("Fetching Alpaca clock")
         clock = trading_client.get_clock()
         logger.info("Reached Alpaca")
