@@ -88,14 +88,17 @@ def run_sweep(sweep_name: str):
         bull = thesis.generate_bull_thesis(ticker, bars.get(ticker, []), sent, articles)
         bear = thesis.generate_bear_thesis(ticker, bars.get(ticker, []), sent, articles)
 
-        sys_prompt = "You are a quantitative portfolio manager. Make a recommendation using ONLY the required JSON schema."
+        sys_prompt = "You are a quantitative portfolio manager. Return only valid JSON, with no markdown or commentary."
         user_prompt = (
             f"Ticker: {ticker}\n"
             f"Bull Thesis: {bull}\n"
             f"Bear Thesis: {bear}\n"
             f"Sentiment: {sent}\n"
             f"Bars: {bars}\n"
-            "Produce the JSON."
+            "Produce JSON with exactly these keys: ticker, action, confidence, bull_case, bear_case, "
+            "supporting_evidence, key_risks, catalysts, position_size_pct, expected_holding_days, "
+            "reasoning_summary. action must be one of BUY, SELL, HOLD, NO_ACTION. "
+            f"The ticker value must be {ticker}."
         )
 
         from trading_system.utils.llm import call_llm
@@ -104,7 +107,7 @@ def run_sweep(sweep_name: str):
         if not raw_rec:
             continue
 
-        rec = recommendation.parse_recommendation(raw_rec)
+        rec = recommendation.parse_recommendation(raw_rec, ticker=ticker)
         if not rec:
             continue
 

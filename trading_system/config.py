@@ -26,6 +26,7 @@ AI_MAX_TOKENS           = 2000
 MIN_CONFIDENCE_SCORE    = 0.65    # ignore recommendations below this
 
 # --- Rate limiting (be conservative) ---
-AI_REQUESTS_PER_MINUTE  = 10
+AI_REQUEST_INTERVAL_SECONDS = 30
+AI_REQUESTS_PER_MINUTE  = 2
 SEARCH_REQUESTS_PER_MINUTE = 8
 MONITOR_INTERVAL_SECONDS = 1200   # 20 minutes

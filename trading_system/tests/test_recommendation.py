@@ -31,6 +31,25 @@ def test_missing_field_raises_error():
     data = parse_recommendation(raw)
     assert data is None
 
+def test_missing_ticker_uses_fallback():
+    raw = """
+    {
+      "action": "BUY",
+      "confidence": 0.78,
+      "bull_case": "bull",
+      "bear_case": "bear",
+      "supporting_evidence": ["fact 1"],
+      "key_risks": ["risk 1"],
+      "catalysts": ["catalyst 1"],
+      "position_size_pct": 0.04,
+      "expected_holding_days": 5,
+      "reasoning_summary": "summary"
+    }
+    """
+    data = parse_recommendation(raw, ticker="NVDA")
+    assert data is not None
+    assert data["ticker"] == "NVDA"
+
 def test_invalid_action_rejected():
     raw = """
     {

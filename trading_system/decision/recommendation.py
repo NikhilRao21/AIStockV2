@@ -3,7 +3,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-def parse_recommendation(raw_json: str) -> dict | None:
+def parse_recommendation(raw_json: str, ticker: str | None = None) -> dict | None:
     try:
         # Strip potential markdown fences
         clean_json = raw_json.strip()
@@ -15,6 +15,8 @@ def parse_recommendation(raw_json: str) -> dict | None:
             clean_json = clean_json[:-3]
         
         data = json.loads(clean_json.strip())
+        if ticker and not data.get("ticker"):
+            data["ticker"] = ticker
         
         required_keys = ["ticker", "action", "confidence", "bull_case", "bear_case", 
                          "supporting_evidence", "key_risks", "catalysts", 
