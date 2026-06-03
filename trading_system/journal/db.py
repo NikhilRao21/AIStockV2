@@ -7,6 +7,26 @@ logger = logging.getLogger(__name__)
 
 DB_PATH = "trading_system.db"
 
+
+def _normalize_sqlite_value(value):
+    """
+    Convert Python values into SQLite-friendly scalars.
+
+    Lists and dicts are stored as JSON so callers can pass structured data
+    without having to serialize it first.
+    """
+    if isinstance(value, (list, dict)):
+        return json.dumps(value)
+    if isinstance(value, datetime):
+        return value.isoformat()
+    if isinstance(value, bool):
+        return int(value)
+    return value
+
+
+def _normalize_data(data: dict) -> dict:
+    return {key: _normalize_sqlite_value(value) for key, value in data.items()}
+
 def init_db():
     try:
         with sqlite3.connect(DB_PATH) as conn:
@@ -88,9 +108,13 @@ def insert_recommendation(data: dict) -> int:
     try:
         with sqlite3.connect(DB_PATH) as conn:
             cursor = conn.cursor()
-            keys = ', '.join(data.keys())
-            placeholders = ', '.join(['?'] * len(data))
-            cursor.execute(f"INSERT INTO recommendations ({keys}) VALUES ({placeholders})", tuple(data.values()))
+            normalized = _normalize_data(data)
+            keys = ', '.join(normalized.keys())
+            placeholders = ', '.join(['?'] * len(normalized))
+            cursor.execute(
+                f"INSERT INTO recommendations ({keys}) VALUES ({placeholders})",
+                tuple(normalized.values()),
+            )
             conn.commit()
             return cursor.lastrowid
     except Exception as e:
@@ -101,9 +125,13 @@ def insert_trade(data: dict) -> int:
     try:
         with sqlite3.connect(DB_PATH) as conn:
             cursor = conn.cursor()
-            keys = ', '.join(data.keys())
-            placeholders = ', '.join(['?'] * len(data))
-            cursor.execute(f"INSERT INTO trades ({keys}) VALUES ({placeholders})", tuple(data.values()))
+            normalized = _normalize_data(data)
+            keys = ', '.join(normalized.keys())
+            placeholders = ', '.join(['?'] * len(normalized))
+            cursor.execute(
+                f"INSERT INTO trades ({keys}) VALUES ({placeholders})",
+                tuple(normalized.values()),
+            )
             conn.commit()
             return cursor.lastrowid
     except Exception as e:
@@ -114,9 +142,13 @@ def insert_portfolio_snapshot(data: dict) -> int:
     try:
         with sqlite3.connect(DB_PATH) as conn:
             cursor = conn.cursor()
-            keys = ', '.join(data.keys())
-            placeholders = ', '.join(['?'] * len(data))
-            cursor.execute(f"INSERT INTO portfolio_snapshots ({keys}) VALUES ({placeholders})", tuple(data.values()))
+            normalized = _normalize_data(data)
+            keys = ', '.join(normalized.keys())
+            placeholders = ', '.join(['?'] * len(normalized))
+            cursor.execute(
+                f"INSERT INTO portfolio_snapshots ({keys}) VALUES ({placeholders})",
+                tuple(normalized.values()),
+            )
             conn.commit()
             return cursor.lastrowid
     except Exception as e:
@@ -150,8 +182,12 @@ def update_trade(trade_id: int, data: dict):
     try:
         with sqlite3.connect(DB_PATH) as conn:
             cursor = conn.cursor()
-            set_clause = ', '.join([f"{k} = ?" for k in data.keys()])
-            cursor.execute(f"UPDATE trades SET {set_clause} WHERE id = ?", tuple(data.values()) + (trade_id,))
+            normalized = _normalize_data(data)
+            set_clause = ', '.join([f"{k} = ?" for k in normalized.keys()])
+            cursor.execute(
+                f"UPDATE trades SET {set_clause} WHERE id = ?",
+                tuple(normalized.values()) + (trade_id,),
+            )
             conn.commit()
     except Exception as e:
         logger.error(f"Failed to update trade: {e}")
@@ -160,9 +196,13 @@ def insert_review(data: dict) -> int:
     try:
         with sqlite3.connect(DB_PATH) as conn:
             cursor = conn.cursor()
-            keys = ', '.join(data.keys())
-            placeholders = ', '.join(['?'] * len(data))
-            cursor.execute(f"INSERT INTO reviews ({keys}) VALUES ({placeholders})", tuple(data.values()))
+            normalized = _normalize_data(data)
+            keys = ', '.join(normalized.keys())
+            placeholders = ', '.join(['?'] * len(normalized))
+            cursor.execute(
+                f"INSERT INTO reviews ({keys}) VALUES ({placeholders})",
+                tuple(normalized.values()),
+            )
             conn.commit()
             return cursor.lastrowid
     except Exception as e:

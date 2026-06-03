@@ -84,9 +84,13 @@ def run_sweep(sweep_name: str):
 
         bars = market.get_bars([ticker])
         articles = news.search_news(f"{ticker} stock news")
+        logger.info("Found %s news articles for %s", len(articles), ticker)
         sent = sentiment.analyze_sentiment(ticker, articles)
+        logger.info("Analyzed Sentiment for %s", ticker)
         bull = thesis.generate_bull_thesis(ticker, bars.get(ticker, []), sent, articles)
+        logger.info("Analyzed Bull Thesis for %s", ticker)
         bear = thesis.generate_bear_thesis(ticker, bars.get(ticker, []), sent, articles)
+        logger.info("Analyzed Bear Thesis for %s", ticker)
 
         sys_prompt = "You are a quantitative portfolio manager. Return only valid JSON, with no markdown or commentary."
         user_prompt = (
@@ -104,6 +108,8 @@ def run_sweep(sweep_name: str):
         from trading_system.utils.llm import call_llm
 
         raw_rec = call_llm(sys_prompt, user_prompt)
+        logger.info("Generated Recommendation for %s", ticker)
+
         if not raw_rec:
             continue
 
