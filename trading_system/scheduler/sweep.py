@@ -40,14 +40,18 @@ def _build_trade_row(rec: dict, order, action: str) -> dict:
 def run_sweep(sweep_name: str):
     logger.info("Starting sweep: %s", sweep_name)
     try:
+        logger.info("Initializing Alpaca trading client")
         trading_client = alpaca_client.get_trading_client()
+        logger.info("Fetching Alpaca account")
         account = trading_client.get_account()
+        logger.info("Fetching Alpaca positions")
         positions = trading_client.get_all_positions()
+        logger.info("Fetching Alpaca clock")
         clock = trading_client.get_clock()
         logger.info("Reached Alpaca")
 
     except Exception as e:
-        logger.error("Failed to initialize clients: %s", e)
+        logger.exception("Failed to initialize Alpaca clients during sweep startup")
         return
 
     peak_value = db.get_peak_value()
