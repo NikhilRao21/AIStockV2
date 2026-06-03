@@ -30,7 +30,7 @@ def call_llm(system_prompt: str, user_prompt: str, temperature: float = 0.2) -> 
     for attempt in range(2):
         try:
             _wait_for_rate_limit()
-            logger.debug("Calling LLM")
+            logger.info("Calling LLM")
             r = requests.post(
                 f"{os.environ['AI_BASE_URL']}/chat/completions",
                 headers={
