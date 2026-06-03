@@ -50,6 +50,8 @@ def run_sweep(sweep_name: str):
 
     peak_value = db.get_peak_value()
     day_start_value = float(account.portfolio_value)
+    logger.info("Portfolio value at day start: %s", day_start_value)
+
 
     candidates = screener.get_candidates()
     logger.info("Found %s screener candidates", len(candidates))
