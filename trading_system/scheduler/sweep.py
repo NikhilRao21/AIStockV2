@@ -153,9 +153,9 @@ def run_sweep(sweep_name: str):
 
                 if rec.get("order_submitted"):
                     sweep_entries += 1
-                    logger.info("Order submitted for %s", ticker)
+                    logger.info("Order %s submitted for %s", action, ticker)
             except Exception as e:
-                logger.error("Order failed for %s: %s", ticker, e)
+                logger.error("Order %s failed for %s: %s", action, ticker, e)
                 rec["order_submitted"] = 0
                 rec["risk_block_reasons"] = json.dumps([str(e)])
         else:
