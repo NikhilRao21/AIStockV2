@@ -21,7 +21,7 @@ def check_position_size(rec: dict, portfolio_value: float) -> tuple[bool, str]:
     size_pct = _normalize_position_size_pct(rec.get("position_size_pct", 0))
     if size_pct > config.MAX_POSITION_PCT:
         logger.warning("Position size check failed: size_pct=%s is greater than max=%s. Adjusting", size_pct, config.MAX_POSITION_PCT)
-        rec[position_size_pct] = config.MAX_POSITION_PCT
+        rec["position_size_pct"] = config.MAX_POSITION_PCT
         return True
     return True, ""
 
