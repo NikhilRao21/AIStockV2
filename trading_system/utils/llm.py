@@ -2,10 +2,11 @@ import os
 import time
 import requests
 import logging
+from typing import Optional
 
 logger = logging.getLogger(__name__)
 
-def call_llm(system_prompt: str, user_prompt: str, temperature: float = 0.2) -> str | None:
+def call_llm(system_prompt: str, user_prompt: str, temperature: float = 0.2) -> Optional[str]:
     for attempt in range(2):
         try:
             r = requests.post(

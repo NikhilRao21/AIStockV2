@@ -1,9 +1,10 @@
 import json
 import logging
+from typing import Optional
 
 logger = logging.getLogger(__name__)
 
-def parse_recommendation(raw_json: str) -> dict | None:
+def parse_recommendation(raw_json: str) -> Optional[dict]:
     try:
         # Strip potential markdown fences
         clean_json = raw_json.strip()

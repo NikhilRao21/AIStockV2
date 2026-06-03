@@ -1,6 +1,6 @@
 import logging
 import uuid
-from typing import Any
+from typing import Any, Optional
 
 from alpaca.trading.enums import OrderSide, OrderType, TimeInForce
 from alpaca.trading.requests import MarketOrderRequest
@@ -8,7 +8,7 @@ from alpaca.trading.requests import MarketOrderRequest
 logger = logging.getLogger(__name__)
 
 
-def _coerce_positive_float(value: Any) -> float | None:
+def _coerce_positive_float(value: Any) -> Optional[float]:
     try:
         number = float(value)
     except (TypeError, ValueError):

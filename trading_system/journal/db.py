@@ -2,6 +2,7 @@ import sqlite3
 import json
 import logging
 from datetime import datetime
+from typing import Optional
 
 logger = logging.getLogger(__name__)
 
@@ -134,7 +135,7 @@ def get_peak_value() -> float:
         logger.error(f"Failed to get peak value: {e}")
         return 0.0
 
-def get_recommendation(rec_id: int) -> dict | None:
+def get_recommendation(rec_id: int) -> Optional[dict]:
     try:
         with sqlite3.connect(DB_PATH) as conn:
             conn.row_factory = sqlite3.Row
