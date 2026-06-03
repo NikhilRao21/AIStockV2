@@ -7,6 +7,15 @@ from trading_system import config
 
 logger = logging.getLogger(__name__)
 
+def _enum_value(enum_cls, value):
+    for name in (value, value.upper()):
+        if hasattr(enum_cls, name):
+            return getattr(enum_cls, name)
+    try:
+        return enum_cls(value)
+    except ValueError:
+        return value
+
 def _coerce_number(value, default=0.0):
     if isinstance(value, (int, float)):
         return value
@@ -37,7 +46,7 @@ def get_candidates() -> list[dict]:
 
         actives_req = MostActivesRequest(
             top=config.SCREENER_TOP_N,
-            by=MostActivesBy.volume,
+            by=_enum_value(MostActivesBy, "volume"),
             market_type=MarketType.STOCKS,
         )
         actives = client.get_most_actives(actives_req)
