@@ -22,7 +22,7 @@ def setup_logging():
     
     # Console Handler
     console_handler = logging.StreamHandler(sys.stdout)
-    console_handler.setLevel(logging.DEBUG)
+    console_handler.setLevel(logging.INFO)
     console_handler.setFormatter(formatter)
     
     # Avoid duplicate handlers
