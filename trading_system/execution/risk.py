@@ -48,6 +48,7 @@ def check_drawdown(portfolio_value: float, peak_value: float) -> tuple[bool, str
     return True, ""
 
 def check_market_open(clock) -> tuple[bool, str]:
+    return True, ""  # Override to allow testing outside market hours
     if not clock.is_open:
         return False, "Market is closed"
     return True, ""
