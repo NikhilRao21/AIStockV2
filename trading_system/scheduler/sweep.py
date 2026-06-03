@@ -46,6 +46,7 @@ def run_sweep(sweep_name: str):
         account = trading_client.get_account()
         logger.info("Fetching Alpaca positions")
         positions = trading_client.get_all_positions()
+        positionsString = ";".join(["{} shares of {}".format(p.qty, p.symbol) for p in positions])
         logger.info("Fetching Alpaca clock")
         clock = trading_client.get_clock()
         logger.info("Reached Alpaca")
@@ -107,9 +108,10 @@ def run_sweep(sweep_name: str):
             f"Bear Thesis: {bear}\n"
             f"Sentiment: {sent}\n"
             f"Bars: {bars}\n"
+            f"Positions: {PositionsString}\n"
             "Produce JSON with exactly these keys: ticker, action, confidence (a number from 0 to 1), bull_case, bear_case, "
             "supporting_evidence, key_risks, catalysts, position_size_pct, expected_holding_days, "
-            "reasoning_summary. action must be one of BUY, SELL, HOLD, NO_ACTION. "
+            "reasoning_summary. action must be one of BUY, SELL, HOLD, NO_ACTION. You can only sell a position if you currently hold it. The confidence should reflect how strongly the evidence supports the action."
             f"The ticker value must be {ticker}."
         )
 
