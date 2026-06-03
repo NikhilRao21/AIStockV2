@@ -44,6 +44,8 @@ def run_sweep(sweep_name: str):
         account = trading_client.get_account()
         positions = trading_client.get_all_positions()
         clock = trading_client.get_clock()
+        logger.info("Reached Alpaca")
+
     except Exception as e:
         logger.error("Failed to initialize clients: %s", e)
         return
