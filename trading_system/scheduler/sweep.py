@@ -95,7 +95,7 @@ def run_sweep(sweep_name: str):
             f"Bear Thesis: {bear}\n"
             f"Sentiment: {sent}\n"
             f"Bars: {bars}\n"
-            "Produce JSON with exactly these keys: ticker, action, confidence, bull_case, bear_case, "
+            "Produce JSON with exactly these keys: ticker, action, confidence (a number from 0 to 1), bull_case, bear_case, "
             "supporting_evidence, key_risks, catalysts, position_size_pct, expected_holding_days, "
             "reasoning_summary. action must be one of BUY, SELL, HOLD, NO_ACTION. "
             f"The ticker value must be {ticker}."
