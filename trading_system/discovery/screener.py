@@ -7,6 +7,16 @@ from trading_system import config
 
 logger = logging.getLogger(__name__)
 
+def _get_attr(item, name, index=None, default=None):
+    if hasattr(item, name):
+        return getattr(item, name)
+    if index is not None:
+        try:
+            return item[index]
+        except (IndexError, TypeError):
+            return default
+    return default
+
 def get_screener_client() -> ScreenerClient:
     return ScreenerClient(os.environ["ALPACA_API_KEY"], os.environ["ALPACA_SECRET_KEY"])
 
@@ -18,11 +28,14 @@ def get_candidates() -> list[dict]:
         actives_req = MostActivesRequest(top=config.SCREENER_TOP_N, market_type=MarketType.STOCKS)
         actives = client.get_most_actives(actives_req)
         for act in actives:
-            if act.symbol not in candidates:
-                candidates[act.symbol] = {
-                    "symbol": act.symbol,
-                    "volume": act.volume,
-                    "price": act.price,
+            symbol = _get_attr(act, "symbol", 0)
+            if not symbol:
+                continue
+            if symbol not in candidates:
+                candidates[symbol] = {
+                    "symbol": symbol,
+                    "volume": _get_attr(act, "volume", 1, 0),
+                    "price": _get_attr(act, "price", 2, 0.0),
                     "percent_change": 0.0,
                     "news_count": 0
                 }
@@ -31,31 +44,36 @@ def get_candidates() -> list[dict]:
         movers = client.get_market_movers(movers_req)
         
         for gainer in movers.gainers:
-            if gainer.symbol not in candidates:
-                candidates[gainer.symbol] = {
-                    "symbol": gainer.symbol,
+            symbol = _get_attr(gainer, "symbol", 0)
+            if not symbol:
+                continue
+            if symbol not in candidates:
+                candidates[symbol] = {
+                    "symbol": symbol,
                     "volume": 0,
-                    "price": gainer.price,
-                    "percent_change": gainer.percent_change,
+                    "price": _get_attr(gainer, "price", 1, 0.0),
+                    "percent_change": _get_attr(gainer, "percent_change", 2, 0.0),
                     "news_count": 0
                 }
             else:
-                candidates[gainer.symbol]["percent_change"] = gainer.percent_change
+                candidates[symbol]["percent_change"] = _get_attr(gainer, "percent_change", 2, 0.0)
 
         for loser in movers.losers:
-            if loser.symbol not in candidates:
-                candidates[loser.symbol] = {
-                    "symbol": loser.symbol,
+            symbol = _get_attr(loser, "symbol", 0)
+            if not symbol:
+                continue
+            if symbol not in candidates:
+                candidates[symbol] = {
+                    "symbol": symbol,
                     "volume": 0,
-                    "price": loser.price,
-                    "percent_change": loser.percent_change,
+                    "price": _get_attr(loser, "price", 1, 0.0),
+                    "percent_change": _get_attr(loser, "percent_change", 2, 0.0),
                     "news_count": 0
                 }
             else:
-                candidates[loser.symbol]["percent_change"] = loser.percent_change
+                candidates[symbol]["percent_change"] = _get_attr(loser, "percent_change", 2, 0.0)
 
         return list(candidates.values())
     except Exception as e:
         logger.error(f"Failed to fetch candidates from screener: {e}")
         return []
-
