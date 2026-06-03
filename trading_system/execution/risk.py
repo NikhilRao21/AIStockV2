@@ -3,15 +3,22 @@ from trading_system import config
 
 logger = logging.getLogger(__name__)
 
+
+def _normalize_position_size_pct(value):
+    try:
+        size_pct = float(value)
+    except (TypeError, ValueError):
+        return 0.0
+
+    return size_pct / 100.0 if size_pct > 1.0 else size_pct
+
 def check_confidence(rec: dict) -> tuple[bool, str]:
     if rec.get("confidence", 0) < config.MIN_CONFIDENCE_SCORE:
         return False, f"Confidence {rec.get('confidence')} below minimum {config.MIN_CONFIDENCE_SCORE}"
     return True, ""
 
 def check_position_size(rec: dict, portfolio_value: float) -> tuple[bool, str]:
-    size_pct = rec.get("position_size_pct", 0)
-    if size_pct > 1.0:
-        size_pct = size_pct / 100.0
+    size_pct = _normalize_position_size_pct(rec.get("position_size_pct", 0))
     if size_pct > config.MAX_POSITION_PCT:
         return False, f"Position size {size_pct} exceeds max {config.MAX_POSITION_PCT}"
     return True, ""
@@ -76,7 +83,7 @@ def run_all_checks(rec: dict, account, positions: list, clock, peak_value: float
     ticker = rec.get("ticker")
     portfolio_value = float(account.portfolio_value)
     cash = float(account.cash)
-    position_size_pct = rec.get("position_size_pct", 0)
+    position_size_pct = _normalize_position_size_pct(rec.get("position_size_pct", 0))
     notional = portfolio_value * position_size_pct
 
     logger.info(

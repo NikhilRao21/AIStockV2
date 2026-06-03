@@ -3,6 +3,27 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+
+def _normalize_position_size_pct(value):
+    """
+    Normalize recommendation sizing into a fractional pct.
+
+    Accepts values like:
+    - 0.05  -> 0.05
+    - 5     -> 0.05
+    - 2.5   -> 0.025
+    """
+    try:
+        size_pct = float(value)
+    except (TypeError, ValueError):
+        return value
+
+    if size_pct > 1:
+        logger.warning("Normalizing position_size_pct from %s to %s", size_pct, size_pct / 100.0)
+        size_pct = size_pct / 100.0
+
+    return size_pct
+
 def parse_recommendation(raw_json: str, ticker: str | None = None) -> dict | None:
     try:
         # Strip potential markdown fences
@@ -35,6 +56,8 @@ def parse_recommendation(raw_json: str, ticker: str | None = None) -> dict | Non
         if not (0.0 <= float(conf) <= 1.0):
             logger.error(f"Confidence out of range: {conf}")
             return None
+
+        data["position_size_pct"] = _normalize_position_size_pct(data.get("position_size_pct"))
             
         return data
     except json.JSONDecodeError as e:
