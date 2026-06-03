@@ -20,21 +20,23 @@ def check_confidence(rec: dict) -> tuple[bool, str]:
 def check_position_size(rec: dict, portfolio_value: float) -> tuple[bool, str]:
     size_pct = _normalize_position_size_pct(rec.get("position_size_pct", 0))
     if size_pct > config.MAX_POSITION_PCT:
-        return False, f"Position size {size_pct} exceeds max {config.MAX_POSITION_PCT}"
+        logger.warning("Position size check failed: size_pct=%s is greater than max=%s. Adjusting", size_pct, config.MAX_POSITION_PCT)
+        rec[position_size_pct] = config.MAX_POSITION_PCT
+        return True
     return True, ""
 
 def check_cash_reserve(notional: float, cash: float, portfolio_value: float) -> tuple[bool, str]:
     if portfolio_value == 0:
         return False, "Portfolio value is 0"
     remaining_cash_pct = (cash - notional) / portfolio_value
-    logger.info(
+    '''logger.info(
         "Cash reserve check: cash=%s notional=%s portfolio_value=%s remaining_cash_pct=%s min_cash_reserve_pct=%s",
         cash,
         notional,
         portfolio_value,
         remaining_cash_pct,
         config.MIN_CASH_RESERVE_PCT,
-    )
+    )'''
     if remaining_cash_pct < config.MIN_CASH_RESERVE_PCT:
         return False, "Insufficient cash reserve"
     return True, ""
@@ -86,7 +88,7 @@ def run_all_checks(rec: dict, account, positions: list, clock, peak_value: float
     position_size_pct = _normalize_position_size_pct(rec.get("position_size_pct", 0))
     notional = portfolio_value * position_size_pct
 
-    logger.info(
+    '''logger.info(
         "Risk inputs for %s: portfolio_value=%s cash=%s position_size_pct=%s notional=%s open_positions=%s sweep_entries=%s peak_value=%s day_start_value=%s",
         ticker,
         portfolio_value,
@@ -97,7 +99,7 @@ def run_all_checks(rec: dict, account, positions: list, clock, peak_value: float
         sweep_entries,
         peak_value,
         day_start_value,
-    )
+    )'''
     
     checks = [
         check_confidence(rec),
