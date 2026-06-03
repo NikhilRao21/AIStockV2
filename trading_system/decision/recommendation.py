@@ -32,7 +32,7 @@ def parse_recommendation(raw_json: str, ticker: str | None = None) -> dict | Non
             return None
             
         conf = data.get("confidence", 0)
-        if not (0.0 <= conf <= 1.0):
+        if not (0.0 <= float(conf) <= 1.0):
             logger.error(f"Confidence out of range: {conf}")
             return None
             
