@@ -121,7 +121,7 @@ def run_sweep(sweep_name: str):
         from trading_system.utils.llm import call_llm
 
         raw_rec = call_llm(sys_prompt, user_prompt)
-        logger.info("Generated Recommendation for %s", ticker)
+        logger.info("Generated Recommendation for %s.", ticker)
 
         if not raw_rec:
             logger.warning("LLM did not return a recommendation for %s", ticker)
@@ -142,13 +142,14 @@ def run_sweep(sweep_name: str):
         passed, reasons = risk.run_all_checks(
             rec, account, positions, clock, peak_value, day_start_value, sweep_entries
         )
-        logger.info("%s passed all checks. Executing Order.", ticker)
+        action = str(rec.get("action", "")).upper()
+
+        logger.info("%s passed all checks. Executing Order of type: %s", ticker, action)
 
 
         order = None
         if passed and sweep_name != "premarket":
             try:
-                action = str(rec.get("action", "")).upper()
                 if action == "BUY":
                     order = orders.submit_order(trading_client, rec)
                     rec["order_submitted"] = 1
