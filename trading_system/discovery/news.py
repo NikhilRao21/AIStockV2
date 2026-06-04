@@ -21,7 +21,7 @@ def search_news_alpaca(query: str, freshness: str = "pd") -> list[dict]:
             timeout=10)
         r.raise_for_status()
         results = r.json().get("news", {}).get("results", [])
-        return [{"title": x["headline"], "url": x["url"], "description": x.get("summary", "")} for x in results]
+        return [{"title": x["headline"], "url": x["url"], "description": x["summary"]} for x in results]
     except Exception as e:
         logger.warning(f"News search failed for '{query}': {e}")
         return []
@@ -57,7 +57,7 @@ def search_news_hc(query: str, freshness: str = "pd") -> list[dict]:
             )
         r.raise_for_status()
         results = r.json().get("news", {}).get("results", [])
-        return [{"title": x["title"], "url": x["url"], "description": x["description"]} for x in results]
+        return [{"title": x["title"], "url": x["url"], "description": x.get("description", "")} for x in results]
     except Exception as e:
         logger.warning(f"News search failed for '{query}': {e}")
         return []
