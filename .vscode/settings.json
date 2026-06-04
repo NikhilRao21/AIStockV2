@@ -1,0 +1,7 @@
+{
+    "python.testing.pytestArgs": [
+        "trading_system"
+    ],
+    "python.testing.unittestEnabled": false,
+    "python.testing.pytestEnabled": true
+}

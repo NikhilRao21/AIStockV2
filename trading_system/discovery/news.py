@@ -2,6 +2,7 @@ import os
 import requests
 import logging
 import re
+import json
 
 logger = logging.getLogger(__name__)
 
@@ -20,7 +21,8 @@ def search_news_alpaca(query: str, freshness: str = "pd") -> list[dict]:
                 "accept": "application/json"},
             timeout=10)
         r.raise_for_status()
-        results = r.text.json().get("news", {})
+        response = r.text
+        results = json.loads(response)["news"]
         return [{"title": x["headline"], "url": x["url"], "description": x["summary"]} for x in results]
     except Exception as e:
         logger.warning(f"News search failed for '{query}': {e}")
