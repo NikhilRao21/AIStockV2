@@ -113,7 +113,7 @@ def run_sweep(sweep_name: str):
             f"Positions (if empty, no positions): {positionString}\n"
             "Produce JSON with exactly these keys: ticker, action, confidence (a number from 0 to 1), bull_case, bear_case, "
             "supporting_evidence, key_risks, catalysts, position_size_pct, expected_holding_days, "
-            "reasoning_summary. action must be one of BUY, SELL, HOLD, NO_ACTION. You can only sell a position if you currently hold it. DO NOT SELL POSITIONS YOU DO NOT HHOLD. "
+            "reasoning_summary. action must be one of BUY, SELL, HOLD, NO_ACTION. You can only sell or hold a position if you currently hold it. DO NOT SELL POSITIONS YOU DO NOT HOLD. "
             "Use confidence like this: 0.90+ only for unusually strong, multi-factor setups with clear evidence across price, volume, news, and thesis; "
             "0.70 to 0.89 for solid setups with several aligned signals; 0.55 to 0.69 for acceptable but not high-conviction ideas; "
             "below 0.55 only when the best action is NO_ACTION or HOLD."
