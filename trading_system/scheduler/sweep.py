@@ -108,10 +108,10 @@ def run_sweep(sweep_name: str):
             f"Bear Thesis: {bear}\n"
             f"Sentiment: {sent}\n"
             f"Bars: {bars}\n"
-            f"Positions: {positionString}\n"
+            f"Positions (if empty, no positions): {positionString}\n"
             "Produce JSON with exactly these keys: ticker, action, confidence (a number from 0 to 1), bull_case, bear_case, "
             "supporting_evidence, key_risks, catalysts, position_size_pct, expected_holding_days, "
-            "reasoning_summary. action must be one of BUY, SELL, HOLD, NO_ACTION. You can only sell a position if you currently hold it. The confidence should reflect how strongly the evidence supports the action."
+            "reasoning_summary. action must be one of BUY, SELL, HOLD, NO_ACTION. You can only sell a position if you currently hold it. DO NOT SELL POSITIONS YOU DO NOT HHOLD."
             f"The ticker value must be {ticker}."
         )
 
