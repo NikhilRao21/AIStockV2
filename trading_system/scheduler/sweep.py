@@ -194,3 +194,5 @@ def run_sweep(sweep_name: str):
         if order is not None and rec.get("order_submitted"):
             trade_row = _build_trade_row({**rec, "recommendation_id": recommendation_id}, order, str(rec.get("action", "")).upper())
             db.insert_trade(trade_row)
+
+    logger.info("Finished sweeping %s. Total orders submitted: %d", sweep_name, sweep_entries)
