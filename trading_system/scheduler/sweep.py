@@ -82,14 +82,16 @@ def run_sweep(sweep_name: str):
     logger.info("Selected %s candidates for deep analysis", len(top_candidates))
 
     sweep_entries = 0
+    count = 0
 
     for cand in top_candidates:
+        count += 1
         if sweep_entries >= config.MAX_ENTRIES_PER_SWEEP:
             logger.info("Max sweep entries reached")
             break
 
         ticker = cand["symbol"]
-        logger.info("Analyzing %s", ticker)
+        logger.info("Analyzing %s. This is number %d of %d", ticker, count, config.DEEP_ANALYSIS_TOP_N)
 
         bars = market.get_bars([ticker])
         articles = news.search_news(f"{ticker} stock news")

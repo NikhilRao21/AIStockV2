@@ -6,10 +6,10 @@ MIN_STOCK_PRICE         = 1.00    # exclude stocks below $1 (penny stock dynamic
 NEWS_RESULTS_PER_TICKER = 5       # articles to fetch per candidate
 
 # --- Portfolio ---
-MAX_OPEN_POSITIONS      = 10
+MAX_OPEN_POSITIONS      = 20
 MAX_POSITION_PCT        = 0.05    # max 5% of portfolio per position
 MIN_CASH_RESERVE_PCT    = 0.20    # always keep 20% cash
-MAX_ENTRIES_PER_SWEEP   = 3       # max new positions opened in a single sweep
+MAX_ENTRIES_PER_SWEEP   = 10       # max new positions opened in a single sweep
 
 # --- Exit rules ---
 STOP_LOSS_PCT           = 0.07    # close position if down 7%
