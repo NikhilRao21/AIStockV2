@@ -15,8 +15,7 @@ def run_monitor():
         account = trading_client.get_account()
         
         # PNL summary
-        pnl = float(account.unrealized_pl)
-        logger.info(f"Monitor: Portfolio Value: {account.portfolio_value}, Unrealized P&L: {pnl}")
+        logger.info(f"Monitor: Portfolio Value: {account.portfolio_value}")
         
         for pos in positions:
             unrealized_plpc = float(pos.unrealized_plpc)
