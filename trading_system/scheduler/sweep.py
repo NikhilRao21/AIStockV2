@@ -63,7 +63,7 @@ def run_sweep(sweep_name: str):
     candidates = screener.get_candidates()
     logger.info("Found %s screener candidates", len(candidates))
 
-    broad_articles = news.search_news("stock market movers today")
+    broad_articles = news.search_news_hc("stock market movers today")
     news_tickers = news.extract_tickers_from_news(broad_articles)
 
     for ticker in news_tickers:
@@ -94,7 +94,7 @@ def run_sweep(sweep_name: str):
         logger.info("Analyzing %s. This is number %d of %d", ticker, count, config.DEEP_ANALYSIS_TOP_N)
 
         bars = market.get_bars([ticker])
-        articles = news.search_news(f"{ticker} stock news")
+        articles = news.search_news_alpaca(ticker)
         logger.info("Found %s news articles for %s", len(articles), ticker)
         sent = sentiment.analyze_sentiment(ticker, articles)
         logger.info("Analyzed Sentiment for %s", ticker)
