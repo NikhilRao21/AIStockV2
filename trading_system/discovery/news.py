@@ -51,7 +51,7 @@ def search_news_langsearch(query: str, freshness: str = "pd") -> list[dict]:
 
         r.raise_for_status()
         response = r.text
-        results = json.loads(response)["data"]["webpages"]
+        results = json.loads(response)["data"]["webPages"]["value"]
         return [{"title": x["name"], "url": x["url"], "description": x["summary"]} for x in results]
     except Exception as e:
         logger.warning(f"News search failed for '{query}': {e}")
