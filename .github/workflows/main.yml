@@ -11,4 +11,4 @@ jobs:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SERVER_SSH_KEY }}
-          script: rm -rf ~/AIStockV2/ && git clone https://github.com/NikhilRao21/AIStockV2.git && cp ~/Documents/.env ~/AIStockV2/
+          script: cp ~/AIStockV2/trading_system.db ~/Documents/ && rm -rf ~/AIStockV2/ && git clone https://github.com/NikhilRao21/AIStockV2.git && cp ~/Documents/.env ~/AIStockV2/ && cp ~/Documents/trading_system.db ~/AIStockV2/

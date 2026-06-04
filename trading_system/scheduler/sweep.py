@@ -153,11 +153,11 @@ def run_sweep(sweep_name: str):
                 if action == "BUY":
                     order = orders.submit_order(trading_client, rec)
                     rec["order_submitted"] = 1
-                    rec["order_id"] = _get_order_attr(order, "id")
+                    rec["order_id"] = str(_get_order_attr(order, "id"))
                 elif action == "SELL":
                     order = trading_client.close_position(ticker)
                     rec["order_submitted"] = 1
-                    rec["order_id"] = _get_order_attr(order, "id")
+                    rec["order_id"] = str(_get_order_attr(order, "id"))
                 else:
                     rec["order_submitted"] = 0
 
