@@ -23,7 +23,7 @@ MAX_DRAWDOWN_PCT        = 0.15    # halt all trading if down 15% from peak
 # --- LLM ---
 AI_TEMPERATURE          = 0.2
 AI_MAX_TOKENS           = 20000
-MIN_CONFIDENCE_SCORE    = 0.65    # ignore recommendations below this
+MIN_CONFIDENCE_SCORE    = 0.55    # ignore recommendations below this
 
 # --- Rate limiting (be conservative) ---
 AI_REQUEST_INTERVAL_SECONDS = 5
