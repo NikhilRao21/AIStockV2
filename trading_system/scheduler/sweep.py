@@ -142,6 +142,8 @@ def run_sweep(sweep_name: str):
         passed, reasons = risk.run_all_checks(
             rec, account, positions, clock, peak_value, day_start_value, sweep_entries
         )
+        logger.info("%s passed all checks. Executing Order.", ticker)
+
 
         order = None
         if passed and sweep_name != "premarket":
@@ -162,7 +164,7 @@ def run_sweep(sweep_name: str):
                     sweep_entries += 1
                     logger.info("Order %s submitted for %s", action, ticker)
             except Exception as e:
-                logger.error("Order %s failed for %s: %s", action, ticker, e)
+                logger.exception("Order %s failed for %s: %s", action, ticker, e)
                 rec["order_submitted"] = 0
                 rec["risk_block_reasons"] = json.dumps([str(e)])
         else:
