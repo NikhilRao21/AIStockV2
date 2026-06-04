@@ -103,7 +103,12 @@ def run_sweep(sweep_name: str):
         bear = thesis.generate_bear_thesis(ticker, bars.get(ticker, []), sent, articles)
         logger.info("Analyzed Bear Thesis for %s", ticker)
 
-        sys_prompt = "You are a quantitative portfolio manager. Return only valid JSON, with no markdown or commentary."
+        sys_prompt = (
+            "You are a quantitative portfolio manager. Return exactly one valid JSON object and nothing else. "
+            "Do not use markdown fences, code blocks, bullet points, headings, or commentary. "
+            "Use double quotes for all keys and string values. Do not include trailing commas. "
+            "Do not include any extra keys beyond the required schema."
+        )
         user_prompt = (
             f"Ticker: {ticker}\n"
             f"Bull Thesis: {bull}\n"
@@ -111,12 +116,35 @@ def run_sweep(sweep_name: str):
             f"Sentiment: {sent}\n"
             f"Bars: {bars}\n"
             f"Positions (if empty, no positions): {positionString}\n"
-            "Produce JSON with exactly these keys: ticker, action, confidence (a number from 0 to 1), bull_case, bear_case, "
-            "supporting_evidence, key_risks, catalysts, position_size_pct, expected_holding_days, "
-            "reasoning_summary. action must be one of BUY, SELL, HOLD, NO_ACTION. You can only sell or hold a position if you currently hold it. DO NOT SELL POSITIONS YOU DO NOT HOLD. "
+            "Return one JSON object matching this schema exactly:\n"
+            "{\n"
+            '  "ticker": "string",\n'
+            '  "action": "BUY|SELL|HOLD|NO_ACTION",\n'
+            '  "confidence": 0.0,\n'
+            '  "bull_case": "string",\n'
+            '  "bear_case": "string",\n'
+            '  "supporting_evidence": ["string"],\n'
+            '  "key_risks": ["string"],\n'
+            '  "catalysts": ["string"],\n'
+            '  "position_size_pct": 0.0,\n'
+            '  "expected_holding_days": 1,\n'
+            '  "reasoning_summary": "string"\n'
+            "}\n"
+            "Schema rules:\n"
+            "- Output one JSON object only.\n"
+            "- No markdown fences, no prose, no code blocks.\n"
+            "- Use double quotes for every key and string value.\n"
+            "- Do not include any keys besides the schema above.\n"
+            "- `action` must be one of BUY, SELL, HOLD, NO_ACTION.\n"
+            "- `confidence` must be a number from 0 to 1.\n"
+            "- `supporting_evidence`, `key_risks`, and `catalysts` must be arrays of strings.\n"
+            "- `position_size_pct` must be a decimal fraction like 0.04 for 4%.\n"
+            "- `expected_holding_days` must be an integer.\n"
+            "action must be one of BUY, SELL, HOLD, NO_ACTION. You can only sell or hold a position if you currently hold it. DO NOT SELL POSITIONS YOU DO NOT HOLD. "
             "Use confidence like this: 0.90+ only for unusually strong, multi-factor setups with clear evidence across price, volume, news, and thesis; "
             "0.70 to 0.89 for solid setups with several aligned signals; 0.55 to 0.69 for acceptable but not high-conviction ideas; "
-            "below 0.55 only when the best action is NO_ACTION or HOLD."
+            "below 0.55 only when the best action is NO_ACTION or HOLD. "
+            "If you cannot comply exactly, still return a single valid JSON object with all required keys."
             f"The ticker value must be {ticker}."
         )
 
