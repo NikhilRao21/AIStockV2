@@ -46,7 +46,7 @@ def run_monitor():
             "equity": float(account.equity),
             "peak_value": max(float(account.portfolio_value), db.get_peak_value()),
             "open_positions": len(positions),
-            "daily_pnl": float(account.unrealized_pl) # Approx
+            "daily_pnl": float(0) # Approx
         })
         
     except Exception as e:
