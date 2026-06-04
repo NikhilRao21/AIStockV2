@@ -36,7 +36,12 @@ def search_news(query: str, freshness: str = "pd") -> list[dict]:
             )
             '''
         params = {"q": query, "limit": 5, "sort": "desc"}
-        r = requests.get("https://data.alpaca.markets/v1beta1/news", params=params, headers={"APCA-API-KEY-ID": os.environ["ALPACA_API_KEY"], "APCA-API-SECRET-KEY": os.environ["ALPACA_SECRET_KEY"]}, timeout=10)
+        r = requests.get("https://data.alpaca.markets/v1beta1/news",
+            params=params, 
+            headers={"APCA-API-KEY-ID": os.environ["ALPACA_API_KEY"],
+                "APCA-API-SECRET-KEY": os.environ["ALPACA_SECRET_KEY"]
+                "accept": "application/json"},
+            timeout=10)
         r.raise_for_status()
         results = r.json().get("news", {}).get("results", [])
         return [{"title": x["headline"], "url": x["url"], "description": x.get("summary", "")} for x in results]
