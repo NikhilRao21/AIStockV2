@@ -11,13 +11,29 @@ def search_news(query: str, freshness: str = "pd") -> list[dict]:
         if not api_key:
             logger.warning("HC_SEARCH_API_KEY not set. Skipping news search.")
             return []
-            
+
+        params = {"q": query, "count": 5}
+        if freshness:
+            params["freshness"] = freshness
+
         r = requests.get(
             "https://search.hackclub.com/res/v1/news/search",
-            params={"q": query, "count": 5, "freshness": freshness},
+            params=params,
             headers={"Authorization": "Bearer " + api_key},
-            timeout=10
+            timeout=10,
         )
+        if r.status_code == 422 and "freshness" in params:
+            logger.info(
+                "Retrying news search for %r without freshness after 422 response",
+                query,
+            )
+            params.pop("freshness", None)
+            r = requests.get(
+                "https://search.hackclub.com/res/v1/news/search",
+                params=params,
+                headers={"Authorization": "Bearer " + api_key},
+                timeout=10,
+            )
         r.raise_for_status()
         results = r.json().get("news", {}).get("results", [])
         return [{"title": x["title"], "url": x["url"], "description": x.get("description", "")} for x in results]
