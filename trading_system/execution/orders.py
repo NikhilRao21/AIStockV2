@@ -25,11 +25,10 @@ def build_market_order(rec: dict, side: OrderSide) -> MarketOrderRequest:
     qty = _coerce_positive_float(rec.get("qty"))
 
     if notional is None and qty is None:
-        price = _coerce_positive_float(rec.get("price_at_signal"))
         portfolio_value = _coerce_positive_float(rec.get("portfolio_value"))
         position_pct = _coerce_positive_float(rec.get("position_size_pct"))
 
-        if price and portfolio_value and position_pct:
+        if portfolio_value is not None and position_pct is not None:
             notional = portfolio_value * position_pct
 
     if notional is None and qty is None:

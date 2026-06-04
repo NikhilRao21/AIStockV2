@@ -42,6 +42,20 @@ def test_build_market_order_buy_uses_notional_for_low_price_stock():
     assert order.qty is None
 
 
+def test_build_market_order_buy_derives_notional_without_price():
+    rec = {
+        "ticker": "VERU",
+        "portfolio_value": 20_000,
+        "position_size_pct": 0.04,
+    }
+
+    order = build_market_order(rec, OrderSide.BUY)
+
+    assert order.symbol == "VERU"
+    assert order.notional == 800.0
+    assert order.qty is None
+
+
 def test_submit_order_buy_places_market_order():
     client = FakeTradingClient()
     rec = {

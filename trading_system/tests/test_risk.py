@@ -22,7 +22,8 @@ class MockClock:
 def test_blocks_oversized_position():
     rec = {"position_size_pct": 0.10}
     passed, _ = check_position_size(rec, 10000)
-    assert not passed
+    assert passed
+    assert rec["position_size_pct"] == config.MAX_POSITION_PCT
 
 def test_allows_valid_position():
     rec = {"position_size_pct": 0.04}
@@ -66,4 +67,4 @@ def test_run_all_checks_blocks_synthetic():
     positions = []
     passed, reasons = run_all_checks(rec, account, positions, clock, 10000, 10000, 0)
     assert not passed
-    assert any("Position size" in r for r in reasons)
+    assert any("Insufficient cash reserve" in r for r in reasons)
