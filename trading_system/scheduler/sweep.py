@@ -121,10 +121,12 @@ def run_sweep(sweep_name: str):
         logger.info("Generated Recommendation for %s", ticker)
 
         if not raw_rec:
+            logger.warning("LLM did not return a recommendation for %s", ticker)
             continue
 
         rec = recommendation.parse_recommendation(raw_rec, ticker=ticker)
         if not rec:
+            logger.warning("LLM did not return a recommendation for %s", ticker)
             continue
 
         rec["price_at_signal"] = cand["price"]
