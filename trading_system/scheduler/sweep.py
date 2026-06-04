@@ -63,7 +63,7 @@ def run_sweep(sweep_name: str):
     candidates = screener.get_candidates()
     logger.info("Found %s screener candidates", len(candidates))
 
-    broad_articles = news.search_news_hc("stock market movers today")
+    broad_articles = news.search_news_langsearch("stock market movers today")
     news_tickers = news.extract_tickers_from_news(broad_articles)
 
     for ticker in news_tickers:

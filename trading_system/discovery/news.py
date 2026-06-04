@@ -28,6 +28,35 @@ def search_news_alpaca(query: str, freshness: str = "pd") -> list[dict]:
         logger.warning(f"News search failed for '{query}': {e}")
         return []
 
+def search_news_langsearch(query: str, freshness: str = "pd") -> list[dict]:
+    try:
+        api_key = os.environ.get("LANGSEARCH_API_KEY", "")
+        if not api_key:
+            logger.warning("LANGSEARCH_API_KEY not set. Skipping news search.")
+            return []
+        
+        payload = json.dumps({
+                "query": query,
+                "freshness": "oneDay",
+                "summary": True,
+                "count": 10
+                })
+        
+
+        r = requests.post(
+            "https://api.langsearch.com/v1/web-search",
+            data=payload,
+            headers={"Authorization": "Bearer " + api_key, 'Content-Type': 'application/json'},
+        )
+
+        r.raise_for_status()
+        response = r.text
+        results = json.loads(response)["data"]["webpages"]
+        return [{"title": x["name"], "url": x["url"], "description": x["summary"]} for x in results]
+    except Exception as e:
+        logger.warning(f"News search failed for '{query}': {e}")
+        return []
+
 def search_news_hc(query: str, freshness: str = "pd") -> list[dict]:
     try:
         api_key = os.environ.get("HC_SEARCH_API_KEY", "")
