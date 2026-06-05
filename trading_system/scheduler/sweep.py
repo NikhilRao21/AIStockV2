@@ -82,6 +82,9 @@ def run_sweep(sweep_name: str):
                 "percent_change": 0,
                 "news_count": 1,
             })
+    
+    logger.info("Found %s tickers to be triaged", len(candidates))
+
 
     top_candidates = triage.select_top_n(candidates, config.DEEP_ANALYSIS_TOP_N)
     logger.info("Selected %s candidates for deep analysis", len(top_candidates))
