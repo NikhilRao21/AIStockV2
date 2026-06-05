@@ -186,7 +186,7 @@ def run_sweep(sweep_name: str):
 
 
         order = None
-        if passed and sweep_name != "premarket":
+        if passed:
             try:
                 if action == "BUY":
                     order = orders.submit_order(trading_client, rec)
