@@ -65,7 +65,7 @@ def run_sweep(sweep_name: str):
 
     broad_articles = news.search_news_langsearch("stock market movers today")
     news_tickers = news.extract_tickers_from_news(broad_articles)
-    logger.info("Found %s tickers from the news", news_tickers.__len__)
+    logger.info("Found %s tickers from the news", len(news_tickers))
     
     for ticker in news_tickers:
         if len(candidates) >= config.MAX_CANDIDATES:
