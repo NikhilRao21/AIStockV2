@@ -27,7 +27,7 @@ def _wait_for_rate_limit():
         _last_request_started_at = time.monotonic()
 
 def call_llm(system_prompt: str, user_prompt: str, temperature: float = 0.2) -> str | None:
-    for attempt in range(2):
+    for attempt in range(3):
         try:
             _wait_for_rate_limit()
             logger.info("Calling LLM")
@@ -46,7 +46,7 @@ def call_llm(system_prompt: str, user_prompt: str, temperature: float = 0.2) -> 
                     "temperature": temperature,
                     "max_tokens": int(os.environ.get("AI_MAX_TOKENS", 2000))
                 },
-                timeout=30
+                timeout=60
             )
             if r.status_code == 429 and attempt == 0:
                 time.sleep(60)
