@@ -12,7 +12,7 @@ def analyze_sentiment(ticker: str, articles: list[dict]) -> dict:
     sys_prompt = "You are a sentiment analyzer. Reply ONLY in JSON format: {\"score\": 0.5, \"themes\": [\"growth\"], \"summary\": \"positive\"}. Score must be float -1.0 to 1.0."
     user_prompt = f"Analyze sentiment for {ticker} based on these articles: {json.dumps(articles)}"
     
-    raw = call_llm(sys_prompt, user_prompt)
+    raw = call_llm(sys_prompt, user_prompt, model="openai/gpt-5.4-nano")
     if raw:
         try:
             # simple strip

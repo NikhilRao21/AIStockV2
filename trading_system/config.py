@@ -1,7 +1,7 @@
 # --- Discovery ---
 SCREENER_TOP_N          = 50      # top N for most-actives and each mover direction
 MAX_CANDIDATES          = 200      # cap the pool before triage
-DEEP_ANALYSIS_TOP_N     = 50      # triage selects this many for LLM analysis
+DEEP_ANALYSIS_TOP_N     = 40      # triage selects this many for LLM analysis
 MIN_STOCK_PRICE         = 1.00    # exclude stocks below $1 (penny stock dynamics differ)
 NEWS_RESULTS_PER_TICKER = 5       # articles to fetch per candidate
 

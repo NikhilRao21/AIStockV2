@@ -26,7 +26,7 @@ def _wait_for_rate_limit():
             time.sleep(wait_seconds)
         _last_request_started_at = time.monotonic()
 
-def call_llm(system_prompt: str, user_prompt: str, temperature: float = 0.2) -> str | None:
+def call_llm(system_prompt: str, user_prompt: str, temperature: float = 0.2, model: str = os.environ["AI_MODEL"]) -> str | None:
     for attempt in range(3):
         try:
             _wait_for_rate_limit()
