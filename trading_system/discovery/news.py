@@ -13,7 +13,7 @@ def search_news_alpaca(query: str, freshness: str = "pd") -> list[dict]:
             logger.warning("HC_SEARCH_API_KEY not set. Skipping news search.")
             return []
 
-        params = {"symbols": query, "limit": 5, "sort": "desc"}
+        params = {"symbols": query, "limit": 20, "sort": "desc"}
         r = requests.get("https://data.alpaca.markets/v1beta1/news",
             params=params, 
             headers={"APCA-API-KEY-ID": os.environ["ALPACA_API_KEY"],
@@ -39,7 +39,7 @@ def search_news_langsearch(query: str, freshness: str = "pd") -> list[dict]:
                 "query": query,
                 "freshness": "oneDay",
                 "summary": True,
-                "count": 10
+                "count": 30
                 })
         
 

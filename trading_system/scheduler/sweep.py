@@ -64,7 +64,11 @@ def run_sweep(sweep_name: str):
     logger.info("Found %s screener candidates", len(candidates))
 
     broad_articles = news.search_news_langsearch("stock market movers today")
-    news_tickers = news.extract_tickers_from_news(broad_articles)
+    high_flying_stocks = news.search_news_langsearch("stocks flying high today")
+    ipo_stocks = news.search_news_langsearch("stocks ipo impact today")
+
+
+    news_tickers = news.extract_tickers_from_news(broad_articles).union(news.extract_tickers_from_news(high_flying_stocks)).union(news.extract_tickers_from_news(ipo_stocks))
     logger.info("Found %s tickers from the news", len(news_tickers))
     
     for ticker in news_tickers:
