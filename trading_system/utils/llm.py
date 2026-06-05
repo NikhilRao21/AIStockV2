@@ -38,7 +38,7 @@ def call_llm(system_prompt: str, user_prompt: str, temperature: float = 0.2, mod
                     "Content-Type": "application/json"
                 },
                 json={
-                    "model": os.environ["AI_MODEL"],
+                    "model": model,
                     "messages": [
                         {"role": "system", "content": system_prompt},
                         {"role": "user",   "content": user_prompt}
