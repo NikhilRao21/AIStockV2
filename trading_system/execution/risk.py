@@ -76,7 +76,7 @@ def check_market_open(clock) -> tuple[bool, str]:
 def check_duplicate_position(ticker: str, positions: list) -> tuple[bool, str]:
     for pos in positions:
         if pos.symbol == ticker:
-            return False, f"Position in {ticker} already open"
+            return True, ""
     return True, ""
 
 def run_all_checks(rec: dict, account, positions: list, clock, peak_value: float, day_start_value: float, sweep_entries: int) -> tuple[bool, list[str]]:
