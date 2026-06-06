@@ -88,7 +88,6 @@ def generate_review():
                 "what_was_correct": clean["what_was_correct"],
                 "what_was_wrong": clean["what_was_wrong"],
                 "risks_missed": clean["risks_missed"],
-                "bear_case": clean["bear_case"],
                 "sizing_appropriate": clean["sizing_appropriate"],
                 "would_take_again": clean["would_take_again"],
                 "lessons_learned": clean["lessons_learned"],
