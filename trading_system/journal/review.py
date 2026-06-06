@@ -78,7 +78,7 @@ def generate_review():
                 "}\n"
             )
 
-            res = call_llm(sys_prompt, user_prompt, model="openai/gpt5.4")
+            res = call_llm(sys_prompt, user_prompt, model="openai/gpt-5.4")
             clean = json.loads(res)
 
             data = {
