@@ -39,6 +39,10 @@ def _build_trade_row(rec: dict, order, action: str) -> dict:
 
 def run_sweep(sweep_name: str):
     logger.info("Starting sweep: %s", sweep_name)
+    content = None
+    with open("summaryReflection.txt", "r", encoding="utf-8") as file:
+        content = file.read()
+    logger.info("Read summary reflection of previous trades.")
     try:
         logger.info("Initializing Alpaca trading client")
         trading_client = alpaca_client.get_trading_client()
@@ -124,6 +128,7 @@ def run_sweep(sweep_name: str):
             f"Sentiment: {sent}\n"
             f"Bars: {bars}\n"
             f"Positions (if empty, no positions): {positionString}\n"
+            f"Reflections from Previous Trades: {content}\n"
             "Return one JSON object matching this schema exactly:\n"
             "{\n"
             '  "ticker": "string",\n'

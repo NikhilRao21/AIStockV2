@@ -2,6 +2,7 @@ import schedule
 import time
 import threading
 from trading_system.scheduler import sweep
+from trading_system.journal import review
 from trading_system.monitor import position_monitor
 from trading_system import config
 import logging
@@ -21,6 +22,9 @@ def run_midday():
 
 def run_preclose():
     sweep.run_sweep("preclose")
+
+def run_review():
+    review.run_review()
     
 def monitor_loop():
     while True:
@@ -37,6 +41,7 @@ def start_scheduler():
     schedule.every().day.at("09:45").do(run_open)
     schedule.every().day.at("12:30").do(run_midday)
     schedule.every().day.at("15:00").do(run_preclose)
+    schedule.every().day.at("20:00").do(run_review)
     
     # Start monitor loop in background thread
     monitor_thread = threading.Thread(target=monitor_loop, daemon=True)

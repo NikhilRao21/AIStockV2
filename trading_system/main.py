@@ -28,6 +28,11 @@ def main():
         sweep.run_sweep("open")
         sys.exit(0)
         
+    if len(sys.argv) > 1 and sys.argv[1] == "--reflect":
+        from trading_system.journal import review
+        review.run_review()
+        sys.exit(0)
+        
     runner.start_scheduler()
 
 if __name__ == "__main__":
