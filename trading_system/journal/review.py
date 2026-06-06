@@ -116,7 +116,7 @@ def generate_review():
         f"Reviews: {reviews}"
         "Generate ONE paragraph only. If there is no reviews, do not generate anything"
     )
-    res = call_llm(sys_prompt, user_prompt, model="openai/gpt5.4")
+    res = call_llm(sys_prompt, user_prompt, model="openai/gpt-5.4")
     with open("summaryReflection.txt", "w") as file:
         file.write(res)
     
