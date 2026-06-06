@@ -24,7 +24,7 @@ def run_preclose():
     sweep.run_sweep("preclose")
 
 def run_review():
-    review.run_review()
+    review.generate_review()
     
 def monitor_loop():
     while True:

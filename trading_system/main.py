@@ -30,7 +30,7 @@ def main():
         
     if len(sys.argv) > 1 and sys.argv[1] == "--reflect":
         from trading_system.journal import review
-        review.run_review()
+        review.generate_review()
         sys.exit(0)
         
     runner.start_scheduler()
