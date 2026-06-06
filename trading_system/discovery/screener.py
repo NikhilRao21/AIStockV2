@@ -1,6 +1,7 @@
 import os
 import logging
-from alpaca.data.historical.screener import ScreenerClient, StockHistoricalDataClient
+from alpaca.data.historical.screener import ScreenerClient
+from alpaca.data.historical import StockHistoricalDataClient  # ← correct client
 from alpaca.data.requests import MostActivesRequest, MarketMoversRequest
 from alpaca.data.enums import MarketType, MostActivesBy
 from trading_system import config
