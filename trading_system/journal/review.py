@@ -16,7 +16,7 @@ import sqlite3
 
 
 def generate_review():
-    client = screener.get_screener_client()
+    client = screener.get_historical_client()
     trades = None
     recommendations = None
     merged = None
@@ -72,7 +72,7 @@ def generate_review():
             clean = json.loads(res)
 
             data = {
-                "trade_id": row.id,
+                "trade_id": row.recommendation_id,
                 "created_at": datetime.now(),           # Fixed: was missing ()
                 "what_happened": clean["what_happened"],
                 "what_was_correct": clean["what_was_correct"],
@@ -88,9 +88,9 @@ def generate_review():
             logger.info("Review Added For: %s", row.ticker_x)
 
         except json.JSONDecodeError as e:
-            logger.error(f"Failed to parse LLM response for trade {row.id}: {e}")
+            logger.error(f"Failed to parse LLM response for trade {row.recommendation_id}: {e}")
         except Exception as e:
-            logger.error(f"Failed to generate review for trade {row.id}: {e}")
+            logger.error(f"Failed to generate review for trade {row.recommendation_id}: {e}")
             
             
     logger.info("Beginning Review Summary")

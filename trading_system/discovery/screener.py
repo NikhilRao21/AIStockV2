@@ -1,6 +1,6 @@
 import os
 import logging
-from alpaca.data.historical.screener import ScreenerClient
+from alpaca.data.historical.screener import ScreenerClient, StockHistoricalDataClient
 from alpaca.data.requests import MostActivesRequest, MarketMoversRequest
 from alpaca.data.enums import MarketType, MostActivesBy
 from trading_system import config
@@ -38,6 +38,10 @@ def _get_attr(item, name, index=None, default=None):
 
 def get_screener_client() -> ScreenerClient:
     return ScreenerClient(os.environ["ALPACA_API_KEY"], os.environ["ALPACA_SECRET_KEY"])
+
+def get_historical_client() -> StockHistoricalDataClient:
+    return StockHistoricalDataClient(os.environ["ALPACA_API_KEY"], os.environ["ALPACA_SECRET_KEY"])
+
 
 def get_candidates() -> list[dict]:
     try:
