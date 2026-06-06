@@ -41,7 +41,17 @@ def generate_review():
 
             # Convert BarSet to a readable string for the prompt
             bars_df = result.df
-            ticker_info = bars_df.to_string() if not bars_df.empty else "No bar data available."
+            bars_df = result.df
+            ticker_info = None
+            if not bars_df.empty:
+                # Reset multi-index if present (Alpaca returns symbol+timestamp index)
+                if isinstance(bars_df.index, pd.MultiIndex):
+                    bars_df = bars_df.reset_index(level=0, drop=True)
+                # Only keep relevant columns, last 30 days
+                cols = [c for c in ["open", "high", "low", "close", "volume", "vwap"] if c in bars_df.columns]
+                ticker_info = bars_df[cols].tail(30).to_string()
+            else:
+                ticker_info = "No bar data available."
 
             sys_prompt = (
                 "You are a quantitative portfolio manager. You will review certain trades."
