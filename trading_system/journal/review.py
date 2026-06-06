@@ -27,6 +27,7 @@ def generate_review():
 
     merged = merged[pd.to_datetime(merged["fill_time"]).dt.date == datetime.now().date()]
     headers = merged.columns.tolist()
+    logger.info("Header: %s", headers)
 
     for row in merged.itertuples(index=True):
         try:
