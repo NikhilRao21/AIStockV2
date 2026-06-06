@@ -104,7 +104,8 @@ def generate_review():
             
             
     logger.info("Beginning Review Summary")
-    reviews = pd.read_sql_query("SELECT * FROM reviews", DB_PATH).to_string()
+    with sqlite3.connect(DB_PATH) as conn:
+        reviews = pd.read_sql_query("SELECT * FROM reviews", conn).to_string()
     sys_prompt = (
                 "You are a quantitative portfolio manager. You will review reviews and generate a summary."
                 "Return exactly one paragraph summarizing the reviews so far. "
@@ -114,7 +115,7 @@ def generate_review():
             )
     user_prompt = (
         f"Reviews: {reviews}"
-        "Generate ONE paragraph only."
+        "Generate ONE paragraph only. If there is no reviews, do not generate anything"
     )
     res = call_llm(sys_prompt, user_prompt, model="openai/gpt5.4")
     with open("summaryReflection.txt", "w") as file:
