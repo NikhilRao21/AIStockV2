@@ -37,11 +37,11 @@ def start_scheduler():
     # We use local time for the schedule if server is in ET, or we adjust.
     # schedule library uses local time. To ensure we run at ET times,
     # in a real app we'd convert ET to local time. For simplicity:
-    schedule.every().day.at("08:30").do(run_premarket)
-    schedule.every().day.at("09:45").do(run_open)
-    schedule.every().day.at("12:30").do(run_midday)
-    schedule.every().day.at("15:00").do(run_preclose)
-    schedule.every().day.at("20:00").do(run_review)
+    schedule.every().weekday.at("08:30").do(run_premarket)
+    schedule.every().weekday.at("09:45").do(run_open)
+    schedule.every().weekday.at("12:30").do(run_midday)
+    schedule.every().weekday.at("15:00").do(run_preclose)
+    schedule.every().weekday.at("20:00").do(run_review)
     
     # Start monitor loop in background thread
     monitor_thread = threading.Thread(target=monitor_loop, daemon=True)

@@ -9,6 +9,7 @@ from datetime import datetime
 import requests
 from alpaca.data.requests import StockBarsRequest
 from alpaca.data.timeframe import TimeFrame
+from trading_system.execution import alpaca_client
 
 logger = logging.getLogger(__name__)
 DB_PATH = "trading_system.db"
@@ -17,6 +18,9 @@ import sqlite3
 
 def generate_review():
     client = screener.get_historical_client()
+    trading_client = alpaca_client.get_trading_client()
+    positions = trading_client.get_all_positions()
+    positionString = ";".join(["{} shares of {}".format(p.qty, p.symbol) for p in positions])
     trades = None
     recommendations = None
     merged = None
@@ -54,7 +58,7 @@ def generate_review():
                 ticker_info = "No bar data available."
 
             sys_prompt = (
-                "You are a quantitative portfolio manager. You will review certain trades."
+                "You are a quantitative portfolio manager. You will review certain trades. DO NOT COMMENT ON THE SCHEMA OR LACK OF FIELDS. FOCUS ON DECISION MAKING"
                 "Return exactly one valid JSON object and nothing else. "
                 "Do not use markdown fences, code blocks, bullet points, headings, or commentary. "
                 "Use double quotes for all keys and string values. Do not include trailing commas. "
@@ -64,6 +68,7 @@ def generate_review():
                 f"Input Data Schema: {headers}"
                 f"Input Data: {row}"
                 f"Ticker Info: {ticker_info}"
+                f"Current Positions w/ Prices (USE ONLY THE CURRENT TICKER!): {positionString}"
                 "Return one JSON object matching this schema exactly:\n"
                 "{\n"
                 '  "what_happened": "string",\n'
@@ -105,15 +110,19 @@ def generate_review():
     logger.info("Beginning Review Summary")
     with sqlite3.connect(DB_PATH) as conn:
         reviews = pd.read_sql_query("SELECT * FROM reviews", conn).to_string()
+    content = None
+    with open("summaryReflection.txt", "r", encoding="utf-8") as file:
+        content = file.read()
     sys_prompt = (
-                "You are a quantitative portfolio manager. You will review reviews and generate a summary."
-                "Return exactly one paragraph summarizing the reviews so far. "
+                "You are a quantitative portfolio manager. You will review reviews and generate a summary. DO NOT COMMENT ON THE SCHEMA OR LACK OF FIELDS. FOCUS ON DECISION MAKING"
+                "Return exactly one paragraph summarizing the reviews so far, plus all previous reviews. "
                 "Do not use markdown fences, code blocks, bullet points, headings, or commentary. "
                 "Use double quotes for all keys and string values. Do not include trailing commas. "
                 "Do not include any extra keys beyond the required schema."
             )
     user_prompt = (
         f"Reviews: {reviews}"
+        f"Previous Reviews: {content}"
         "Generate ONE paragraph only. If there is no reviews, do not generate anything"
     )
     res = call_llm(sys_prompt, user_prompt, model="openai/gpt-5.4")
