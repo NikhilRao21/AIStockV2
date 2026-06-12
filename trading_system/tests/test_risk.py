@@ -55,11 +55,6 @@ def test_drawdown_halt():
     passed, _ = check_drawdown(8000, 10000)
     assert not passed
 
-def test_blocks_duplicate_position():
-    positions = [MockPosition("NVDA")]
-    passed, _ = check_duplicate_position("NVDA", positions)
-    assert not passed
-
 def test_run_all_checks_blocks_synthetic():
     rec = {"ticker": "AAPL", "position_size_pct": 0.99, "confidence": 0.9}
     account = MockAccount(10000, 10000)

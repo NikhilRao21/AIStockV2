@@ -1,7 +1,12 @@
 {
+    "python.defaultInterpreterPath": "/home/codespace/.python/current/bin/python3",
+    "python.testing.cwd": "${workspaceFolder}",
     "python.testing.pytestArgs": [
-        "trading_system"
+        "trading_system/tests"
     ],
     "python.testing.unittestEnabled": false,
-    "python.testing.pytestEnabled": true
+    "python.testing.pytestEnabled": true,
+    "python.analysis.extraPaths": [
+        "${workspaceFolder}"
+    ]
 }
