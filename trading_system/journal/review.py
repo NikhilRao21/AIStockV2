@@ -123,7 +123,7 @@ def generate_review():
     user_prompt = (
         f"Reviews: {reviews}"
         f"Previous Reviews: {content}"
-        "Generate ONE paragraph only. If there is no reviews, do not generate anything"
+        "Generate ONE paragraph only. If there is no reviews, output only the previous reviews."
     )
     res = call_llm(sys_prompt, user_prompt, model="openai/gpt-5.4")
     with open("summaryReflection.txt", "w") as file:
