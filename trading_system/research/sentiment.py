@@ -12,7 +12,7 @@ def analyze_sentiment(ticker: str, articles: list[dict]) -> dict:
     sys_prompt = "You are a sentiment analyzer. Reply ONLY in JSON format: {\"score\": 0.5, \"themes\": [\"growth\"], \"summary\": \"positive\"}. Score must be float -1.0 to 1.0."
     user_prompt = f"Analyze sentiment for {ticker} based on these articles: {json.dumps(articles)}"
     
-    raw = call_llm(sys_prompt, user_prompt, model="deepseek/deepseek-v3.2")
+    raw = call_llm(sys_prompt, user_prompt, model="deepseek/deepseek-v4-flash-0731")
     if raw:
         try:
             # simple strip

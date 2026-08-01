@@ -83,7 +83,7 @@ def generate_review():
                 "}\n"
             )
 
-            res = call_llm(sys_prompt, user_prompt, model="openai/gpt-5.4")
+            res = call_llm(sys_prompt, user_prompt, model="deepseek/deepseek-v4-flash-0731")
             clean = json.loads(res)
 
             data = {
@@ -125,7 +125,7 @@ def generate_review():
         f"Previous Reviews: {content}"
         "Generate ONE paragraph only. If there is no reviews, output only the previous reviews."
     )
-    res = call_llm(sys_prompt, user_prompt, model="openai/gpt-5.4")
+    res = call_llm(sys_prompt, user_prompt, model="deepseek/deepseek-v4-flash-0731")
     if res != None:
         with open("summaryReflection.txt", "w") as file:
             file.write(res)
