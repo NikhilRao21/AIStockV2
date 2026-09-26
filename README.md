@@ -215,19 +215,39 @@ If you delete the file, the app will recreate the schema on next startup, but yo
 
 ## Running It on a Server
 
-If you want this to run continuously, use a machine that stays online. A small cloud VM is usually the simplest option.
+Pushing to `main` deploys automatically (`.github/workflows/main.yml`). The GitHub Action SSHes into the server (secrets `SERVER_HOST`, `SERVER_USER`, `SERVER_SSH_KEY`) and:
 
-Typical server setup:
+1. updates `~/AIStockV2` in place with `git reset --hard origin/main`. Gitignored state (`.env`, `trading_system.db`, `summaryReflection.txt`, `logs/`, `.venv/`) is kept.
+2. runs `deploy/bot.sh deploy`, which:
+   - creates `.venv` if needed and installs `requirements.txt`
+   - runs a **preflight** (`python -m trading_system.main --check`): required env vars are present, the code imports, and Alpaca accepts the keys. If this fails, the Action fails and **the running bot is left alone**.
+   - stops the old bot gracefully (SIGTERM: it finishes the ticker it is analyzing, up to 5 minutes)
+   - starts the new bot in a detached `tmux` session named `aistock` (or with `nohup` if tmux is not installed), inside a loop that restarts it 60s after a crash
 
-1. Create a Linux VM.
-2. Install Python 3.11+.
-3. Clone the repo.
-4. Create a virtual environment.
-5. Install dependencies.
-6. Add your `.env` file.
-7. Start the process with `python -m trading_system.main`.
+One-time server setup: the repo cloned at `~/AIStockV2`, a filled-in `~/AIStockV2/.env`, Python 3.10+, and ideally `tmux` (`sudo apt install tmux`).
 
-For long-running deployments, many people wrap the command in a process manager such as `systemd`, `supervisord`, or a container runtime. The repository does not currently include one, so you will need to add your own if you want automatic restarts.
+### Monitoring and control on the server
+
+```bash
+cd ~/AIStockV2
+deploy/bot.sh status    # running or not, deployed commit, last log lines
+deploy/bot.sh logs      # follow logs/trading.log (Ctrl+C stops watching, the bot keeps running)
+deploy/bot.sh attach    # live console in tmux; detach with Ctrl+b then d
+deploy/bot.sh stop      # graceful stop
+deploy/bot.sh start     # start without redeploying
+deploy/bot.sh restart
+python -m trading_system.main --report   # performance so far (with .venv activated)
+```
+
+Pressing Ctrl+C while attached to the tmux console counts as a crash, and the bot restarts after 60s. Use `deploy/bot.sh stop` to stop it.
+
+To bring the bot back after a server reboot, add a cron entry (`crontab -e`):
+
+```
+@reboot cd ~/AIStockV2 && bash deploy/bot.sh start
+```
+
+If a sweep is interrupted by a deploy, it is not re-run that day. Its ET time has already passed, so the next scheduled sweep picks up from there.
 
 ## Testing
 

@@ -1,4 +1,3 @@
-import time
 import threading
 import logging
 from datetime import datetime, date
@@ -11,6 +10,7 @@ from trading_system.execution import alpaca_client
 from trading_system.journal import review
 from trading_system.monitor import position_monitor
 from trading_system.scheduler import sweep
+from trading_system.utils import shutdown
 
 logger = logging.getLogger(__name__)
 
@@ -50,16 +50,17 @@ def _run_safely(name: str, fn):
 
 
 def monitor_loop():
-    while True:
+    while not shutdown.requested():
         _run_safely("monitor", position_monitor.run_monitor)
-        time.sleep(config.MONITOR_INTERVAL_SECONDS)
+        shutdown.wait(config.MONITOR_INTERVAL_SECONDS)
 
 
 def start_scheduler():
     jobs = build_jobs()
     logger.info("Starting scheduler (times are %s): %s", config.MARKET_TIMEZONE, [(n, t) for n, t, _ in jobs])
 
-    threading.Thread(target=monitor_loop, daemon=True).start()
+    monitor_thread = threading.Thread(target=monitor_loop, daemon=True)
+    monitor_thread.start()
 
     # Jobs whose time already passed when the process starts are skipped for today, so a
     # restart at 2pm doesn't fire the open and midday sweeps back to back.
@@ -67,7 +68,7 @@ def start_scheduler():
     last_run = {name: now.date() for name, at, _ in jobs if at <= now.strftime("%H:%M")}
     trading_day_cache: dict[date, bool] = {}
 
-    while True:
+    while not shutdown.requested():
         now = datetime.now(MARKET_TZ)
         for name, _, fn in due_jobs(jobs, now, last_run):
             last_run[name] = now.date()
@@ -77,4 +78,6 @@ def start_scheduler():
                 _run_safely(name, fn)
             else:
                 logger.info("Skipping %s: market holiday or weekend", name)
-        time.sleep(POLL_SECONDS)
+        shutdown.wait(POLL_SECONDS)
+    monitor_thread.join(timeout=120)  # let an in-progress monitor pass finish closing positions
+    logger.info("Scheduler stopped")

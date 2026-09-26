@@ -4,6 +4,7 @@ from dotenv import load_dotenv
 from trading_system.utils import logger as app_logger
 from trading_system.journal import db
 from trading_system.scheduler import runner
+from trading_system.utils import shutdown
 
 def check_env():
     required = ["ALPACA_API_KEY", "ALPACA_SECRET_KEY", "AI_API_KEY", "AI_BASE_URL", "AI_MODEL", "LANGSEARCH_API_KEY"]
@@ -22,6 +23,13 @@ def main():
     logger = logging.getLogger(__name__)
     logger.info("Starting AI Trading System")
     
+    if len(sys.argv) > 1 and sys.argv[1] == "--check":
+        # Deploy preflight: env is complete, code imports, and Alpaca answers.
+        from trading_system.execution import alpaca_client
+        account = alpaca_client.get_trading_client().get_account()
+        print(f"Preflight OK: Alpaca account {account.status}, equity {account.equity}")
+        sys.exit(0)
+
     if len(sys.argv) > 1 and sys.argv[1] == "--sweep-only":
         from trading_system.scheduler import sweep
         sweep.run_sweep("open")
@@ -42,6 +50,7 @@ def main():
         report.generate_report()
         sys.exit(0)
 
+    shutdown.install_handlers()
     runner.start_scheduler()
 
 if __name__ == "__main__":

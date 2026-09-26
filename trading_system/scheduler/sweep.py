@@ -11,6 +11,7 @@ from trading_system.execution import alpaca_client, orders, risk
 from trading_system.journal import db
 from trading_system.monitor.position_monitor import record_close
 from trading_system.research import sentiment, triage, thesis
+from trading_system.utils import shutdown
 from trading_system.utils.llm import call_llm
 
 logger = logging.getLogger(__name__)
@@ -188,6 +189,9 @@ def run_sweep(sweep_name: str):
 
     sweep_entries = 0
     for count, cand in enumerate(work, start=1):
+        if shutdown.requested():
+            logger.info("Shutdown requested; ending sweep early")
+            break
         ticker = cand["symbol"]
         is_held = ticker in held
         if not is_held and sweep_entries >= config.MAX_ENTRIES_PER_SWEEP:
