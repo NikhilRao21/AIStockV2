@@ -1,5 +1,4 @@
-alpaca-py
+alpaca-py>=0.40
 requests
-schedule
 python-dotenv
 pytest

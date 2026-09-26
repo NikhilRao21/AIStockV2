@@ -1,12 +1,11 @@
 import logging
 import sys
 import os
-from datetime import datetime
+from logging.handlers import TimedRotatingFileHandler
 
 def setup_logging():
     os.makedirs("logs", exist_ok=True)
-    today = datetime.now().strftime("%Y-%m-%d")
-    log_file = f"logs/trading_{today}.log"
+    log_file = "logs/trading.log"
     
     # Root logger
     root = logging.getLogger()
@@ -15,8 +14,8 @@ def setup_logging():
     # Format
     formatter = logging.Formatter('%(asctime)s [%(levelname)s] %(name)s: %(message)s')
     
-    # File Handler
-    file_handler = logging.FileHandler(log_file)
+    # File Handler: rotates at midnight so a long-running process doesn't write one giant file
+    file_handler = TimedRotatingFileHandler(log_file, when="midnight", backupCount=30)
     file_handler.setLevel(logging.DEBUG)
     file_handler.setFormatter(formatter)
     
@@ -29,3 +28,6 @@ def setup_logging():
     if not root.handlers:
         root.addHandler(file_handler)
         root.addHandler(console_handler)
+    # Third-party HTTP debug logs drown out our own
+    for noisy in ("urllib3", "requests"):
+        logging.getLogger(noisy).setLevel(logging.WARNING)

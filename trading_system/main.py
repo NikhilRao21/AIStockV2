@@ -6,7 +6,7 @@ from trading_system.journal import db
 from trading_system.scheduler import runner
 
 def check_env():
-    required = ["ALPACA_API_KEY", "ALPACA_SECRET_KEY", "AI_API_KEY", "AI_BASE_URL", "AI_MODEL", "HC_SEARCH_API_KEY"]
+    required = ["ALPACA_API_KEY", "ALPACA_SECRET_KEY", "AI_API_KEY", "AI_BASE_URL", "AI_MODEL", "LANGSEARCH_API_KEY"]
     missing = [v for v in required if not os.environ.get(v)]
     if missing:
         print(f"Missing required environment variables: {', '.join(missing)}")
@@ -22,7 +22,6 @@ def main():
     logger = logging.getLogger(__name__)
     logger.info("Starting AI Trading System")
     
-    # Run a quick sweep for phase 1 validation
     if len(sys.argv) > 1 and sys.argv[1] == "--sweep-only":
         from trading_system.scheduler import sweep
         sweep.run_sweep("open")
@@ -33,6 +32,16 @@ def main():
         review.generate_review()
         sys.exit(0)
         
+    if len(sys.argv) > 1 and sys.argv[1] == "--monitor-only":
+        from trading_system.monitor import position_monitor
+        position_monitor.run_monitor()
+        sys.exit(0)
+
+    if len(sys.argv) > 1 and sys.argv[1] == "--report":
+        from trading_system import report
+        report.generate_report()
+        sys.exit(0)
+
     runner.start_scheduler()
 
 if __name__ == "__main__":

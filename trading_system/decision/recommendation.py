@@ -1,7 +1,7 @@
 import json
 import logging
-import ast
-import re
+
+from trading_system.utils.llm import parse_json_like
 
 logger = logging.getLogger(__name__)
 
@@ -58,51 +58,9 @@ def _normalize_position_size_pct(value):
     return size_pct
 
 
-def _extract_json_object(raw_text: str) -> str:
-    text = raw_text.strip()
-
-    if text.startswith("```"):
-        text = re.sub(r"^```(?:json)?\s*", "", text, flags=re.IGNORECASE)
-        text = re.sub(r"\s*```$", "", text)
-
-    start = text.find("{")
-    end = text.rfind("}")
-    if start != -1 and end != -1 and end > start:
-        return text[start : end + 1].strip()
-
-    return text
-
-
-def _repair_json_text(text: str) -> str:
-    repaired = text.strip()
-    repaired = re.sub(r",(\s*[}\]])", r"\1", repaired)
-    return repaired
-
-
-def _parse_json_like(text: str):
-    candidates = [_extract_json_object(text)]
-    for candidate in list(candidates):
-        repaired = _repair_json_text(candidate)
-        if repaired not in candidates:
-            candidates.append(repaired)
-
-    for candidate in candidates:
-        try:
-            return json.loads(candidate)
-        except json.JSONDecodeError:
-            pass
-
-    for candidate in candidates:
-        try:
-            return ast.literal_eval(candidate)
-        except (ValueError, SyntaxError):
-            pass
-
-    raise json.JSONDecodeError("Unable to parse recommendation JSON", text, 0)
-
 def parse_recommendation(raw_json: str, ticker: str | None = None) -> dict | None:
     try:
-        data = _parse_json_like(raw_json)
+        data = parse_json_like(raw_json)
         if not isinstance(data, dict):
             logger.error("Recommendation must decode to a JSON object")
             return None

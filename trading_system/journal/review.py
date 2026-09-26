@@ -1,132 +1,98 @@
 import json
 import logging
-from trading_system.utils.llm import call_llm
-from trading_system.journal import db
-from trading_system.discovery import screener
-import pandas as pd
-from pandas import DataFrame
-from datetime import datetime
-import requests
+from datetime import datetime, timedelta
+
 from alpaca.data.requests import StockBarsRequest
 from alpaca.data.timeframe import TimeFrame
-from trading_system.execution import alpaca_client
+
+from trading_system import config, report
+from trading_system.data import market
+from trading_system.journal import db
+from trading_system.utils.llm import call_llm, call_llm_json, fast_model
 
 logger = logging.getLogger(__name__)
-DB_PATH = "trading_system.db"
-import sqlite3
+
+REVIEW_FIELDS = ["what_happened", "what_was_correct", "what_was_wrong", "risks_missed",
+                 "sizing_appropriate", "would_take_again", "lessons_learned", "thesis_accuracy"]
+
+REVIEW_SYSTEM_PROMPT = (
+    "You are a quantitative portfolio manager doing a post-mortem on a closed swing trade. "
+    "Judge the decision process, not just the outcome: a good decision can lose money and a bad one can win. "
+    "Return exactly one JSON object with these keys and nothing else:\n"
+    '{"what_happened": "string", "what_was_correct": "string", "what_was_wrong": "string", '
+    '"risks_missed": "string", "sizing_appropriate": 0 or 1, "would_take_again": 0 or 1, '
+    '"lessons_learned": "string", "thesis_accuracy": number from 0 to 1}'
+)
+
+SUMMARY_SYSTEM_PROMPT = (
+    "You maintain the trading playbook for an automated swing-trading system. Rewrite the playbook as at most "
+    "10 short, specific, actionable rules (plain text, one per line, no markdown headings) that the system should "
+    "follow when choosing and managing trades. Base rules on patterns that recur across multiple trades and on the "
+    "performance statistics; drop rules the evidence no longer supports. Do not add rules from a single anecdote."
+)
+
+
+def _price_path(ticker: str, start: str, end: str) -> str:
+    try:
+        client = market.get_historical_client()
+        start_dt = datetime.fromisoformat(start) - timedelta(days=5)
+        end_dt = datetime.fromisoformat(end) + timedelta(days=1)
+        bars = client.get_stock_bars(StockBarsRequest(
+            symbol_or_symbols=ticker, timeframe=TimeFrame.Day, start=start_dt, end=end_dt,
+        )).data.get(ticker, [])
+        return "\n".join(f"{b.timestamp.date()} O{b.open} H{b.high} L{b.low} C{b.close} V{int(b.volume)}" for b in bars)
+    except Exception as e:
+        logger.warning("Could not load price path for %s: %s", ticker, e)
+        return "No bar data available."
+
+
+def review_trade(trade: dict) -> bool:
+    trade_view = {k: v for k, v in trade.items() if v is not None and k not in ("id", "recommendation_id")}
+    user_prompt = (
+        f"Closed trade and the original recommendation:\n{json.dumps(trade_view, default=str)}\n\n"
+        f"Daily price path around the holding period:\n{_price_path(trade['ticker'], trade['fill_time'], trade['close_time'])}"
+    )
+    res = call_llm_json(REVIEW_SYSTEM_PROMPT, user_prompt, model=fast_model())
+    if not res or any(k not in res for k in REVIEW_FIELDS):
+        logger.error("Invalid review for trade %s: %s", trade["id"], res)
+        return False
+    db.insert_review({"trade_id": trade["id"], "created_at": datetime.now(), **{k: res[k] for k in REVIEW_FIELDS}})
+    logger.info("Review added for trade %s (%s)", trade["id"], trade["ticker"])
+    return True
+
+
+def update_playbook():
+    reviews = db.get_recent_reviews(limit=30)
+    if not reviews:
+        logger.info("No reviews yet; playbook unchanged")
+        return
+    previous = ""
+    try:
+        with open(config.REFLECTION_PATH, "r", encoding="utf-8") as file:
+            previous = file.read()
+    except FileNotFoundError:
+        pass
+
+    compact = [
+        {k: r.get(k) for k in ("ticker", "pnl_pct", "closed_by", "what_was_wrong", "risks_missed",
+                               "lessons_learned", "would_take_again", "thesis_accuracy")}
+        for r in reviews
+    ]
+    user_prompt = (
+        f"Performance statistics: {json.dumps(report.compute_stats())}\n\n"
+        f"Current playbook:\n{previous or '(empty)'}\n\n"
+        f"Most recent trade reviews (newest first):\n{json.dumps(compact, default=str)}"
+    )
+    res = call_llm(SUMMARY_SYSTEM_PROMPT, user_prompt, model=fast_model())
+    if res:
+        with open(config.REFLECTION_PATH, "w", encoding="utf-8") as file:
+            file.write(res.strip() + "\n")
+        logger.info("Playbook updated")
 
 
 def generate_review():
-    client = screener.get_historical_client()
-    trading_client = alpaca_client.get_trading_client()
-    positions = trading_client.get_all_positions()
-    positionString = ";".join(["{} shares of {}".format(p.qty, p.symbol) for p in positions])
-    trades = None
-    recommendations = None
-    merged = None
-    with sqlite3.connect(DB_PATH) as conn:
-        trades = pd.read_sql_query("SELECT * FROM trades", conn)
-        recommendations = pd.read_sql_query("SELECT * FROM recommendations", conn)
-        merged = pd.merge(trades, recommendations, how="inner", left_on="recommendation_id", right_on="id")
-
-    merged = merged[pd.to_datetime(merged["fill_time"]).dt.date == datetime.now().date()]
-    headers = merged.columns.tolist()
-    logger.info("Header: %s", headers)
-
-    for row in merged.itertuples(index=True):
-        try:
-            # Fetch price bars for the ticker
-            request_params = StockBarsRequest(
-                symbol_or_symbols=row.ticker_x,
-                timeframe=TimeFrame.Day,
-                start=datetime(2026, 1, 1)
-            )
-            result = client.get_stock_bars(request_params)
-
-            # Convert BarSet to a readable string for the prompt
-            bars_df = result.df
-            bars_df = result.df
-            ticker_info = None
-            if not bars_df.empty:
-                # Reset multi-index if present (Alpaca returns symbol+timestamp index)
-                if isinstance(bars_df.index, pd.MultiIndex):
-                    bars_df = bars_df.reset_index(level=0, drop=True)
-                # Only keep relevant columns, last 30 days
-                cols = [c for c in ["open", "high", "low", "close", "volume", "vwap"] if c in bars_df.columns]
-                ticker_info = bars_df[cols].tail(30).to_string()
-            else:
-                ticker_info = "No bar data available."
-
-            sys_prompt = (
-                "You are a quantitative portfolio manager. You will review certain trades. DO NOT COMMENT ON THE SCHEMA OR LACK OF FIELDS. FOCUS ON DECISION MAKING"
-                "Return exactly one valid JSON object and nothing else. "
-                "Do not use markdown fences, code blocks, bullet points, headings, or commentary. "
-                "Use double quotes for all keys and string values. Do not include trailing commas. "
-                "Do not include any extra keys beyond the required schema."
-            )
-            user_prompt = (
-                f"Input Data Schema: {headers}"
-                f"Input Data: {row}"
-                f"Ticker Info: {ticker_info}"
-                f"Current Positions w/ Prices (USE ONLY THE CURRENT TICKER!): {positionString}"
-                "Return one JSON object matching this schema exactly:\n"
-                "{\n"
-                '  "what_happened": "string",\n'
-                '  "what_was_correct": "string",\n'
-                '  "what_was_wrong": "string",\n'
-                '  "risks_missed": "string",\n'
-                '  "bear_case": "string",\n'
-                '  "sizing_appropriate": 0|1,\n'
-                '  "would_take_again": 0|1,\n'
-                '  "lessons_learned": "string",\n'
-                '  "thesis_accuracy": float from 0 to 1\n'
-                "}\n"
-            )
-
-            res = call_llm(sys_prompt, user_prompt, model="deepseek/deepseek-v4-flash-0731")
-            clean = json.loads(res)
-
-            data = {
-                "trade_id": row.recommendation_id,
-                "created_at": datetime.now(),           # Fixed: was missing ()
-                "what_happened": clean["what_happened"],
-                "what_was_correct": clean["what_was_correct"],
-                "what_was_wrong": clean["what_was_wrong"],
-                "risks_missed": clean["risks_missed"],
-                "sizing_appropriate": clean["sizing_appropriate"],
-                "would_take_again": clean["would_take_again"],
-                "lessons_learned": clean["lessons_learned"],
-                "thesis_accuracy": clean["thesis_accuracy"],
-            }
-            db.insert_review(data)
-            logger.info("Review Added For: %s", row.ticker_x)
-
-        except json.JSONDecodeError as e:
-            logger.error(f"Failed to parse LLM response for trade {row.recommendation_id}: {e}")
-        except Exception as e:
-            logger.error(f"Failed to generate review for trade {row.recommendation_id}: {e}")
-            
-            
-    logger.info("Beginning Review Summary")
-    with sqlite3.connect(DB_PATH) as conn:
-        reviews = pd.read_sql_query("SELECT * FROM reviews", conn).to_string()
-    content = None
-    with open("summaryReflection.txt", "r", encoding="utf-8") as file:
-        content = file.read()
-    sys_prompt = (
-                "You are a quantitative portfolio manager. You will review reviews and generate a summary. DO NOT COMMENT ON THE SCHEMA OR LACK OF FIELDS. FOCUS ON DECISION MAKING"
-                "Return exactly one paragraph summarizing the reviews so far, plus all previous reviews. "
-                "Do not use markdown fences, code blocks, bullet points, headings, or commentary. "
-                "Use double quotes for all keys and string values. Do not include trailing commas. "
-                "Do not include any extra keys beyond the required schema."
-            )
-    user_prompt = (
-        f"Reviews: {reviews}"
-        f"Previous Reviews: {content}"
-        "Generate ONE paragraph only. If there is no reviews, output only the previous reviews."
-    )
-    res = call_llm(sys_prompt, user_prompt, model="deepseek/deepseek-v4-flash-0731")
-    if res != None:
-        with open("summaryReflection.txt", "w") as file:
-            file.write(res)
-    
+    trades = db.get_unreviewed_closed_trades()
+    logger.info("Reviewing %d closed trades", len(trades))
+    reviewed = sum(review_trade(t) for t in trades)
+    if reviewed:
+        update_playbook()

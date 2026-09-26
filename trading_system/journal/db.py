@@ -3,9 +3,28 @@ import json
 import logging
 from datetime import datetime
 
+from trading_system import config
+
 logger = logging.getLogger(__name__)
 
-DB_PATH = "trading_system.db"
+DB_PATH = config.DB_PATH
+
+# Columns added after the original schema; applied with ALTER TABLE on existing databases.
+MIGRATIONS = {
+    "recommendations": {
+        "features": "TEXT",
+        "sentiment_score": "REAL",
+        "raw_response": "TEXT",
+        "notional": "REAL",
+    },
+    "trades": {
+        "order_id": "TEXT",
+        "atr_at_entry": "REAL",
+        "stop_price": "REAL",
+        "take_profit_price": "REAL",
+        "high_water_price": "REAL",
+    },
+}
 
 
 def _normalize_sqlite_value(value):
@@ -100,6 +119,11 @@ def init_db():
                 thesis_accuracy     REAL
             )
             """)
+            for table, columns in MIGRATIONS.items():
+                existing = {row[1] for row in cursor.execute(f"PRAGMA table_info({table})")}
+                for column, column_type in columns.items():
+                    if column not in existing:
+                        cursor.execute(f"ALTER TABLE {table} ADD COLUMN {column} {column_type}")
             conn.commit()
     except Exception as e:
         logger.error(f"Failed to initialize database: {e}")
@@ -208,3 +232,60 @@ def insert_review(data: dict) -> int:
     except Exception as e:
         logger.error(f"Failed to insert review: {e}")
         return -1
+
+
+def _fetch_all(query: str, params: tuple = ()) -> list[dict]:
+    try:
+        with sqlite3.connect(DB_PATH) as conn:
+            conn.row_factory = sqlite3.Row
+            return [dict(row) for row in conn.execute(query, params).fetchall()]
+    except Exception as e:
+        logger.error(f"Query failed: {e}")
+        return []
+
+
+def get_open_trades() -> list[dict]:
+    """BUY trades that have not been closed yet, newest first."""
+    return _fetch_all("SELECT * FROM trades WHERE side = 'BUY' AND close_time IS NULL ORDER BY id DESC")
+
+
+def get_open_trade(ticker: str) -> dict | None:
+    rows = _fetch_all(
+        "SELECT * FROM trades WHERE side = 'BUY' AND close_time IS NULL AND ticker = ? ORDER BY id DESC LIMIT 1",
+        (ticker,),
+    )
+    return rows[0] if rows else None
+
+
+def get_tickers_opened_on(day: str) -> set[str]:
+    """Tickers with a BUY trade whose fill_time starts with the given YYYY-MM-DD date."""
+    rows = _fetch_all("SELECT DISTINCT ticker FROM trades WHERE side = 'BUY' AND fill_time LIKE ?", (day + "%",))
+    return {row["ticker"] for row in rows}
+
+
+def get_unreviewed_closed_trades() -> list[dict]:
+    return _fetch_all("""
+        SELECT t.*, r.confidence, r.bull_case, r.bear_case, r.supporting_evidence, r.key_risks,
+               r.catalysts, r.reasoning_summary, r.expected_holding_days, r.features, r.sentiment_score
+        FROM trades t
+        LEFT JOIN recommendations r ON r.id = t.recommendation_id
+        LEFT JOIN reviews v ON v.trade_id = t.id
+        WHERE t.side = 'BUY' AND t.pnl_pct IS NOT NULL AND v.id IS NULL
+        ORDER BY t.id
+    """)
+
+
+def get_closed_trades() -> list[dict]:
+    return _fetch_all("SELECT * FROM trades WHERE side = 'BUY' AND pnl_pct IS NOT NULL ORDER BY close_time")
+
+
+def get_portfolio_snapshots() -> list[dict]:
+    return _fetch_all("SELECT * FROM portfolio_snapshots ORDER BY recorded_at")
+
+
+def get_recent_reviews(limit: int = 20) -> list[dict]:
+    return _fetch_all("""
+        SELECT v.*, t.ticker, t.pnl_pct, t.closed_by
+        FROM reviews v JOIN trades t ON t.id = v.trade_id
+        ORDER BY v.id DESC LIMIT ?
+    """, (limit,))

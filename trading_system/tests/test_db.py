@@ -51,3 +51,20 @@ def test_insert_and_close_trade():
         cursor.execute("SELECT * FROM trades WHERE id = ?", (trade_id,))
         fetched = dict(cursor.fetchone())
         assert fetched["close_price"] == 160.0
+
+
+def test_migrated_columns_exist():
+    with sqlite3.connect(db.DB_PATH) as conn:
+        cols = {row[1] for row in conn.execute("PRAGMA table_info(trades)")}
+    assert {"order_id", "atr_at_entry", "high_water_price"} <= cols
+
+
+def test_open_and_closed_trade_queries():
+    trade_id = db.insert_trade({"ticker": "AAPL", "side": "BUY", "notional": 100, "fill_time": "2026-09-25T10:00:00"})
+    assert db.get_open_trade("AAPL")["id"] == trade_id
+    assert db.get_tickers_opened_on("2026-09-25") == {"AAPL"}
+    db.update_trade(trade_id, {"close_time": "2026-09-26T10:00:00", "pnl_pct": 0.05, "pnl": 5})
+    assert db.get_open_trade("AAPL") is None
+    assert [t["id"] for t in db.get_unreviewed_closed_trades()] == [trade_id]
+    db.insert_review({"trade_id": trade_id, "created_at": "2026-09-26"})
+    assert db.get_unreviewed_closed_trades() == []

@@ -6,3 +6,4 @@ pytest_cache/
 .pytest_cache/
 trading_system.db
 .venv/*
+summaryReflection.txt

@@ -10,11 +10,23 @@ At a high level, the system:
 
 1. Loads your API keys from a `.env` file.
 2. Creates a local SQLite database called `trading_system.db`.
-3. Starts a scheduler that runs four sweeps per trading day.
-4. Runs a monitor loop every 20 minutes during market hours.
+3. Starts a scheduler that runs three sweeps per trading day (Eastern Time, skipping market holidays) and a post-close review.
+4. Runs a monitor loop every 20 minutes while the market is open.
 5. Uses Alpaca paper trading so no real money is used.
 
-The code currently does not place real orders in the default sweep path. The order submission line is present, but it is commented out in `trading_system/scheduler/sweep.py`. That means the system is currently safest to use as a research and validation harness unless you enable order submission yourself.
+Sweeps **do submit paper orders** (fractional, notional market orders) when a recommendation passes the risk checks. Orders are only sent while the market is open unless `ALLOW_TRADING_WHEN_CLOSED=1`.
+
+## How a Trade Is Decided
+
+1. **Discovery**: Alpaca most-actives and top movers, plus tickers from Alpaca (Benzinga) news and LangSearch web news. Every ticker is validated against Alpaca's list of active, tradable, fractionable, non-OTC stocks.
+2. **Features**: ~120 days of daily bars per candidate are summarized into returns, SMA20/50, RSI14, ATR14, relative volume and average dollar volume.
+3. **Triage**: candidates under $5, with under $5M average daily dollar volume, missing history, or already moving more than 40% today are dropped. The rest are ranked by relative volume, size of move, news count and trend.
+4. **Research**: sentiment, then a bull analyst and a bear analyst, each given the features and headlines (`AI_FAST_MODEL`).
+5. **Decision**: a portfolio-manager prompt (`AI_MODEL`) sees both theses, the features, the proposed size and stop, and the learned playbook, and returns BUY / NO_ACTION (new names) or HOLD / SELL (held names). Held positions are re-evaluated every sweep.
+6. **Sizing**: each position risks ~1% of equity between entry and a stop 2 x ATR below it, capped at 5% of the portfolio. The LLM can shrink the size but not grow it.
+7. **Risk checks**: confidence, cash reserve, position count, entries per sweep, daily loss vs. yesterday's close, drawdown from peak, market open, no duplicate positions. Exits skip the capacity and halt checks, but discretionary same-day sells are blocked to avoid day trades.
+8. **Exits** (monitor, every 20 minutes): a stop starting at entry - 2 x ATR that trails the highest price seen, and a target at entry + 4 x ATR. Positions without an ATR on record fall back to -7% / +20%.
+9. **Learning**: after the close, each closed trade gets an LLM post-mortem, and those reviews plus performance stats are distilled into a short playbook (`summaryReflection.txt`) fed into future decisions.
 
 ## Important Safety Notes
 
@@ -108,7 +120,8 @@ ALPACA_SECRET_KEY=your_paper_secret_key
 AI_API_KEY=your_ai_provider_key
 AI_BASE_URL=https://your-provider.com/v1
 AI_MODEL=qwen/qwen3-32b
-HC_SEARCH_API_KEY=your_hackclub_search_key
+AI_FAST_MODEL=deepseek/deepseek-v4-flash-0731
+LANGSEARCH_API_KEY=your_langsearch_key
 ```
 
 ### What each variable means
@@ -117,10 +130,13 @@ HC_SEARCH_API_KEY=your_hackclub_search_key
 - `ALPACA_SECRET_KEY`: your Alpaca paper trading secret key
 - `AI_API_KEY`: key for the LLM provider you want to use
 - `AI_BASE_URL`: the provider’s chat-completions base URL, ending in `/v1`
-- `AI_MODEL`: the model name the provider expects
-- `HC_SEARCH_API_KEY`: key used for news search
+- `AI_MODEL`: the model used for the final trade decision
+- `AI_FAST_MODEL` (optional): cheaper model for sentiment, theses and reviews; defaults to `AI_MODEL`
+- `LANGSEARCH_API_KEY`: free key from langsearch.com, used for broad news discovery (free tier: 1,000 queries/day)
+- `REFLECTION_PATH`, `DB_PATH` (optional): where the learned playbook and database live
+- `ALLOW_TRADING_WHEN_CLOSED` (optional): set to `1` to send orders outside market hours when testing
 
-The program will stop immediately if any required value is missing.
+The program will stop immediately if any required value is missing (the optional ones above are not required).
 
 ### 5) Make sure Alpaca is in paper-trading mode
 
@@ -154,31 +170,31 @@ python -m trading_system.main --sweep-only
 
 This is the easiest way to confirm that your keys, network access, and database are all working before leaving the system running.
 
+Other one-shot modes:
+
+```bash
+python -m trading_system.main --monitor-only   # one monitor pass (stops, fill reconciliation, snapshot)
+python -m trading_system.main --reflect        # review closed trades and update the playbook
+python -m trading_system.main --report         # win rate, profit factor, drawdown, Sharpe, vs. SPY
+```
+
 ## How the Runtime Works
 
-The scheduler in `trading_system/scheduler/runner.py` sets up four sweeps each day:
+The scheduler in `trading_system/scheduler/runner.py` runs on US Eastern Time regardless of the server's timezone, and skips weekends and market holidays using Alpaca's calendar:
 
-- 8:30 AM ET: pre-market
-- 9:45 AM ET: open
-- 12:30 PM ET: midday
-- 3:00 PM ET: pre-close
+- 9:45 AM ET: open sweep
+- 12:30 PM ET: midday sweep
+- 3:00 PM ET: pre-close sweep
+- 4:30 PM ET: review of closed trades and playbook update
 
-It also starts a separate monitor loop that runs every 20 minutes.
+Times are configured in `SWEEP_SCHEDULE` / `REVIEW_TIME` in `config.py`. If the process starts after a job's time, that job waits until the next day. A failing job is logged and does not stop the scheduler.
 
-The monitor loop:
+The monitor loop runs every 20 minutes while the market is open. It:
 
-- reads current positions from Alpaca
-- checks stop-loss and take-profit thresholds
+- fills in actual fill prices for submitted orders and closes out orders that never filled
+- enforces the ATR trailing stop and take-profit
+- records realized P&L on the journal trade
 - records portfolio snapshots in SQLite
-
-The sweep loop:
-
-- pulls candidates from Alpaca’s screener
-- adds news-derived tickers
-- ranks candidates
-- asks the LLM for thesis and recommendation text
-- runs deterministic risk checks
-- stores the result in the database
 
 ## Database File
 
@@ -186,10 +202,14 @@ The app stores local data in `trading_system.db` in the project root.
 
 It includes tables for:
 
-- recommendations
-- trades
+- recommendations (including the features, sentiment score and raw LLM response behind each decision)
+- trades (order id, fill, ATR, stop/target, high-water price, close reason and P&L)
 - portfolio snapshots
 - post-trade reviews
+
+New columns are added automatically to an existing database on startup.
+
+The learned playbook lives in `summaryReflection.txt`. It is gitignored so deployments never overwrite it.
 
 If you delete the file, the app will recreate the schema on next startup, but you will lose the stored history.
 
@@ -217,7 +237,7 @@ Run the tests with:
 pytest
 ```
 
-The test suite covers the core risk, triage, database, and recommendation logic.
+The test suite covers risk and sizing, triage, features, news ticker extraction, exit levels, scheduling, the database, recommendation parsing, and an offline end-to-end sweep with Alpaca and the LLM faked.
 
 To test buying and selling, run the following code before executing the test suite
 
@@ -251,11 +271,11 @@ Confirm that:
 
 ### News search errors
 
-Confirm that `HC_SEARCH_API_KEY` is valid and that the provider is reachable from the machine running the app.
+Confirm that `LANGSEARCH_API_KEY` is valid and under the free-tier daily limit. Alpaca news uses your Alpaca keys.
 
 ## A Quick Reality Check
 
-This repository currently has the scaffolding for a trading system, but some execution behavior is still conservative or mocked in places. In particular, order submission in the main sweep is commented out. That means the safest way to deploy it right now is as a paper-trading research system first, then enable live order submission only after you fully understand the control flow.
+The trading client is hard-coded to `paper=True`. Before trusting any results, let it run long enough to collect a meaningful number of closed trades (50+) and compare `--report` against simply holding SPY. LLM confidence scores are not calibrated probabilities, and a few weeks of paper results can easily be luck.
 
 ## Recommended First Run
 
