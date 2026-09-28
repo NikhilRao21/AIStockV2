@@ -1,6 +1,6 @@
 import json
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from alpaca.data.requests import StockBarsRequest
 from alpaca.data.timeframe import TimeFrame
@@ -35,8 +35,11 @@ SUMMARY_SYSTEM_PROMPT = (
 def _price_path(ticker: str, start: str, end: str) -> str:
     try:
         client = market.get_historical_client()
-        start_dt = datetime.fromisoformat(start) - timedelta(days=5)
-        end_dt = datetime.fromisoformat(end) + timedelta(days=1)
+        # fill_time is UTC-aware (from Alpaca), close_time is naive local; normalize both to aware.
+        start_dt = datetime.fromisoformat(start).astimezone() - timedelta(days=5)
+        # The free data plan rejects SIP queries that reach into the most recent 15 minutes.
+        end_dt = min(datetime.fromisoformat(end).astimezone() + timedelta(days=1),
+                     datetime.now(timezone.utc) - timedelta(minutes=16))
         bars = client.get_stock_bars(StockBarsRequest(
             symbol_or_symbols=ticker, timeframe=TimeFrame.Day, start=start_dt, end=end_dt,
         )).data.get(ticker, [])
